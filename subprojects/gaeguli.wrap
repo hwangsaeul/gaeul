@@ -1,0 +1,4 @@
+[wrap-git]
+directory=gaeguli
+url=https://github.com/hwangsaeul/gaeguli.git
+revision=master
