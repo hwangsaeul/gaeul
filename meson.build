@@ -59,7 +59,11 @@ gaeul_incs = include_directories('.', 'dbus')
 
 common_ldflags = [ ]
 
-subdir('agent')
+gaeul_c_args = [
+  '-DG_LOG_DOMAIN="GAEUL"',
+]
+
 subdir('dbus')
+subdir('agent')
 
 run_command(python3, '-c', 'import shutil; shutil.copy("hooks/pre-commit.hook", ".git/hooks/pre-commit")')
