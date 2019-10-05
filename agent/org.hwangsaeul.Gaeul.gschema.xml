@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<schemalist>
+  <schema id="org.hwangsaeul.Gaeul" path="/org/hwangsaeul/Gaeul/">
+    <key name="edge-id" type="s">
+      <default>"randomized-string"</default>
+    </key>
+  </schema>
+</schemalist>
