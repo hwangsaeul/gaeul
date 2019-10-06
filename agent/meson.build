@@ -45,6 +45,6 @@ gaeul_agent = executable (
   sources: [ source_c, schema ],
   include_directories: gaeul_incs,
   c_args: gaeul_agent_c_args,
-  dependencies: [ gobject_dep, libgaeul_dbus_dep, chamge_dep ],
+  dependencies: [ gobject_dep, libgaeul_dbus_dep, chamge_dep, gaeguli_dep ],
   install: true
 )
