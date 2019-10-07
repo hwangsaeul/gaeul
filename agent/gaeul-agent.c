@@ -28,6 +28,12 @@
 
 #define GAEUL_SCHEMA_ID "org.hwangsaeul.Gaeul"
 
+/* *INDENT-OFF* */
+#if !GLIB_CHECK_VERSION(2,57,1)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(GEnumClass, g_type_class_unref)
+#endif
+/* *INDENT-ON* */
+
 struct _GaeulAgent
 {
   GApplication parent;
@@ -38,8 +44,11 @@ struct _GaeulAgent
   gulong edge_state_changed_id;
   ChamgeNodeState edge_prev_state;
   GaeguliPipeline *pipeline;
+  GaeguliFifoTransmit *transmit;
 
   gchar *srt_target_uri;
+  guint target_stream_id;
+  guint transmit_id;
 };
 
 /* *INDENT-OFF* */
@@ -73,6 +82,17 @@ _start_pipeline (GaeulAgent * self)
   }
 
   g_debug ("connect to (uri: %s)", self->srt_target_uri);
+
+  self->transmit_id =
+      gaeguli_fifo_transmit_start (self->transmit, "172.30.254.3", 8888,
+      GAEGULI_SRT_MODE_CALLER, &error);
+
+  self->target_stream_id =
+      gaeguli_pipeline_add_fifo_target_full (self->pipeline,
+      GAEGULI_VIDEO_CODEC_H264, GAEGULI_VIDEO_RESOLUTION_640x480,
+      gaeguli_fifo_transmit_get_fifo (self->transmit), &error);
+
+  g_debug ("start stream to fifo (id: %u)", self->target_stream_id);
 
   gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PLAYING);
 
@@ -166,8 +186,14 @@ gaeul_shutdown (GApplication * app)
 {
   GaeulAgent *self = GAEUL_AGENT (app);
   ChamgeNodeState edge_state;
+  g_autoptr (GError) error = NULL;
 
   g_debug ("shutdown");
+
+  if (self->target_stream_id > 0) {
+    gaeguli_pipeline_remove_target (self->pipeline, self->target_stream_id,
+        &error);
+  }
 
   if (self->edge_state_changed_id > 0) {
     g_signal_handler_disconnect (self->edge, self->edge_state_changed_id);
@@ -185,8 +211,11 @@ gaeul_shutdown (GApplication * app)
       g_debug ("edge is NULL state now");
   }
 
-
   gaeguli_pipeline_stop (self->pipeline);
+
+  gaeguli_fifo_transmit_stop (self->transmit, self->transmit_id, &error);
+
+  gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PAUSED);
 
   G_APPLICATION_CLASS (gaeul_agent_parent_class)->shutdown (app);
 }
@@ -198,6 +227,7 @@ gaeul_agent_dispose (GObject * object)
 
   g_clear_object (&self->edge);
   g_clear_object (&self->pipeline);
+  g_clear_object (&self->transmit);
 
   g_clear_object (&self->dbus_manager);
   g_clear_object (&self->settings);
@@ -227,18 +257,42 @@ gaeul_agent_init (GaeulAgent * self)
   self->dbus_manager = gaeul_dbus_manager_skeleton_new ();
   self->settings = g_settings_new (GAEUL_SCHEMA_ID);
   g_autofree gchar *uid = NULL;
+  g_autofree gchar *encoding_method = NULL;
+  g_autofree gchar *video_source = NULL;
+  g_autofree gchar *video_device = NULL;
+
+  GEnumValue *enum_value = NULL;
+  g_autoptr (GEnumClass) enum_class = NULL;
+
+  GaeguliVideoSource vsrc;
+  GaeguliEncodingMethod enc;
 
   uid = g_settings_get_string (self->settings, "edge-id");
+  encoding_method = g_settings_get_string (self->settings, "encoding-method");
+  video_source = g_settings_get_string (self->settings, "video-source");
+  video_device = g_settings_get_string (self->settings, "video-device");
 
-  g_debug ("activate edge id:[%s]", uid);
+  g_debug ("activate edge id:[%s], encoding-method:[%s]", uid, encoding_method);
+
+  enum_class = g_type_class_ref (GAEGULI_TYPE_ENCODING_METHOD);
+  enum_value = g_enum_get_value_by_nick (enum_class, encoding_method);
+
+  enc = enum_value->value;
+
+  enum_class = g_type_class_ref (GAEGULI_TYPE_VIDEO_SOURCE);
+  enum_value = g_enum_get_value_by_nick (enum_class, video_source);
+
+  vsrc = enum_value->value;
 
   self->edge = chamge_edge_new (uid);
   self->edge_prev_state = CHAMGE_NODE_STATE_NULL;
-  self->pipeline = gaeguli_pipeline_new ();
+  self->pipeline = gaeguli_pipeline_new_full (vsrc, video_device, enc);
 
   self->edge_state_changed_id =
       g_signal_connect (self->edge, "state-changed",
       G_CALLBACK (_edge_state_changed_cb), self);
+
+  self->transmit = gaeguli_fifo_transmit_new ();
 }
 
 static guint signal_watch_intr_id;

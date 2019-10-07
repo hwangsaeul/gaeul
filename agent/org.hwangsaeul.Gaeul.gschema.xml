@@ -7,6 +7,12 @@
     <key name="encoding-method" type="s">
       <default>"nvidia-tx1"</default>
     </key>
+    <key name="video-source" type="s">
+      <default>"v4l2src"</default>
+    </key>
+    <key name="video-device" type="s">
+      <default>"/dev/video1"</default>
+    </key>
     <key name="default-srt-target-uri" type="s">
       <default>"srt://172.30.254.3?mode=listener"</default>
     </key>
