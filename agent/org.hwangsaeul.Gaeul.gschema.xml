@@ -4,5 +4,11 @@
     <key name="edge-id" type="s">
       <default>"randomized-string"</default>
     </key>
+    <key name="encoding-method" type="s">
+      <default>"nvidia-tx1"</default>
+    </key>
+    <key name="default-srt-target-uri" type="s">
+      <default>"srt://172.30.254.3?mode=listener"</default>
+    </key>
   </schema>
 </schemalist>

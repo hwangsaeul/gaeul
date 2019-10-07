@@ -35,12 +35,85 @@ struct _GaeulAgent
 
   GSettings *settings;
   ChamgeEdge *edge;
+  gulong edge_state_changed_id;
+  ChamgeNodeState edge_prev_state;
   GaeguliPipeline *pipeline;
+
+  gchar *srt_target_uri;
 };
 
 /* *INDENT-OFF* */
 G_DEFINE_TYPE (GaeulAgent, gaeul_agent, G_TYPE_APPLICATION)
 /* *INDENT-ON* */
+
+#define DBUS_STATE_PAUSED       0
+#define DBUS_STATE_PLAYING      1
+#define DBUS_STATE_RECORDING    2
+
+static gboolean
+_start_pipeline (GaeulAgent * self)
+{
+  g_autoptr (GError) error = NULL;
+
+  g_debug ("edge is activated.");
+  /* SRT connection uri is available only when activated */
+
+  g_free (self->srt_target_uri);
+
+  /* TODO: request uri from chamge 
+   *
+   * self->srt_target_uri = chamge_edge_request_target_uri (self->edge, &error);
+   */
+
+  self->srt_target_uri =
+      g_settings_get_string (self->settings, "default-srt-target-uri");
+
+  if (self->srt_target_uri == NULL) {
+    g_warning ("failed to get srt connection uri");
+  }
+
+  g_debug ("connect to (uri: %s)", self->srt_target_uri);
+
+  gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PLAYING);
+
+  return G_SOURCE_REMOVE;
+}
+
+static gboolean
+_edge_activate (GaeulAgent * self)
+{
+  chamge_node_activate (CHAMGE_NODE (self->edge));
+
+  return G_SOURCE_REMOVE;
+}
+
+static void
+_edge_state_changed_cb (ChamgeEdge * edge, ChamgeNodeState state,
+    GaeulAgent * self)
+{
+  switch (state) {
+    case CHAMGE_NODE_STATE_NULL:
+      g_debug ("edge goes NULL");
+      break;
+    case CHAMGE_NODE_STATE_ENROLLED:
+      if (self->edge_prev_state == CHAMGE_NODE_STATE_NULL) {
+        g_debug ("edge is enrolled.");
+        /* FIXME: different context or dispatcher is required to avoid blocking */
+        g_idle_add ((GSourceFunc) _edge_activate, self);
+      } else {
+        g_debug ("edge is deactivated.");
+      }
+      break;
+    case CHAMGE_NODE_STATE_ACTIVATED:{
+      g_idle_add ((GSourceFunc) _start_pipeline, self);
+      break;
+    }
+    default:
+      g_assert_not_reached ();
+  }
+
+  self->edge_prev_state = state;
+}
 
 static void
 gaeul_agent_activate (GApplication * app)
@@ -48,6 +121,8 @@ gaeul_agent_activate (GApplication * app)
   GaeulAgent *self = GAEUL_AGENT (app);
 
   g_debug ("activate");
+
+  chamge_node_enroll (CHAMGE_NODE (self->edge), FALSE);
 }
 
 static gboolean
@@ -90,8 +165,26 @@ static void
 gaeul_shutdown (GApplication * app)
 {
   GaeulAgent *self = GAEUL_AGENT (app);
+  ChamgeNodeState edge_state;
 
   g_debug ("shutdown");
+
+  if (self->edge_state_changed_id > 0) {
+    g_signal_handler_disconnect (self->edge, self->edge_state_changed_id);
+    self->edge_state_changed_id = 0;
+  }
+
+  /* FIXME: chamge should do internally when disposing */
+  g_object_get (self->edge, "state", &edge_state, NULL);
+  switch (edge_state) {
+    case CHAMGE_NODE_STATE_ACTIVATED:
+      chamge_node_deactivate (CHAMGE_NODE (self->edge));
+    case CHAMGE_NODE_STATE_ENROLLED:
+      chamge_node_delist (CHAMGE_NODE (self->edge));
+    case CHAMGE_NODE_STATE_NULL:
+      g_debug ("edge is NULL state now");
+  }
+
 
   gaeguli_pipeline_stop (self->pipeline);
 
@@ -108,6 +201,8 @@ gaeul_agent_dispose (GObject * object)
 
   g_clear_object (&self->dbus_manager);
   g_clear_object (&self->settings);
+
+  g_clear_pointer (&self->srt_target_uri, g_free);
 
   G_OBJECT_CLASS (gaeul_agent_parent_class)->dispose (object);
 }
@@ -138,7 +233,12 @@ gaeul_agent_init (GaeulAgent * self)
   g_debug ("activate edge id:[%s]", uid);
 
   self->edge = chamge_edge_new (uid);
+  self->edge_prev_state = CHAMGE_NODE_STATE_NULL;
   self->pipeline = gaeguli_pipeline_new ();
+
+  self->edge_state_changed_id =
+      g_signal_connect (self->edge, "state-changed",
+      G_CALLBACK (_edge_state_changed_cb), self);
 }
 
 static guint signal_watch_intr_id;
@@ -147,9 +247,9 @@ static gboolean
 intr_handler (gpointer user_data)
 {
   GApplication *app = user_data;
+  GaeulAgent *self = GAEUL_AGENT (app);
 
   g_debug ("releasing app");
-
   g_application_release (app);
 
   signal_watch_intr_id = 0;
