@@ -324,7 +324,7 @@ main (int argc, char **argv)
 
   signal_watch_intr_id =
       g_unix_signal_add (SIGINT, (GSourceFunc) intr_handler, app);
-  g_application_set_inactivity_timeout (app, 10000);
+  g_application_set_inactivity_timeout (app, 1000);
 
   if (!g_application_register (app, NULL, &error)) {
     g_debug ("failed to register app (reason: %s)", error->message);
