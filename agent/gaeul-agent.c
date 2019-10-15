@@ -59,17 +59,107 @@ G_DEFINE_TYPE (GaeulAgent, gaeul_agent, G_TYPE_APPLICATION)
 #define DBUS_STATE_PLAYING      1
 #define DBUS_STATE_RECORDING    2
 
+static char
+_search_delimiter (const char *from, guint * position)
+{
+  *position = 0;
+
+  for (;;) {
+    char ch = *from++;
+    (*position)++;
+
+    switch (ch) {
+      case ':':
+      case 0:
+      case '/':
+      case '?':
+      case '#':
+      case '=':
+        return ch;
+      default:
+        break;
+    }
+  }
+}
+
+static ChamgeReturn
+_srt_parse_uri (const gchar * url, gchar ** host, guint * portnum,
+    gchar ** mode)
+{
+  ChamgeReturn res = CHAMGE_RETURN_FAIL;
+  gchar delimiter = 0;
+  g_autofree gchar *port = NULL;
+  guint position = 0;
+
+  g_return_val_if_fail (host != NULL, res);
+  g_return_val_if_fail (portnum != NULL, res);
+
+  if (!strncmp (url, "srt://", 6)) {
+    url += 6;
+  }
+
+  delimiter = _search_delimiter (url, &position);
+  *host = g_strndup (url, position - 1);
+
+  if (delimiter == ':') {
+    url += position;
+    delimiter = _search_delimiter (url, &position);
+    port = g_strndup (url, position - 1);
+  }
+
+  if (port) {
+    gchar *end = NULL;
+    *portnum = strtol (port, &end, 10);
+
+    if (port == end || *end != 0 || *portnum < 0 || *portnum > 65535) {
+      goto out;
+    }
+  }
+
+  if (delimiter == '?' && mode != NULL) {
+    url += position;
+    delimiter = _search_delimiter (url, &position);
+
+    if (delimiter != '=') {
+      goto out;
+    }
+
+    *mode = g_strndup (url, position - 1);
+    if (!g_strcmp0 (*mode, "mode")) {
+      url += position;
+      delimiter = _search_delimiter (url, &position);
+      if (position > 1) {
+        g_free (*mode);
+        *mode = g_strndup (url, position - 1);
+      }
+    } else {
+      g_free (*mode);
+      *mode = NULL;
+    }
+    res = CHAMGE_RETURN_OK;
+  } else if (delimiter == 0) {
+    res = CHAMGE_RETURN_OK;
+  }
+
+out:
+  return res;
+}
+
 static gboolean
 _start_pipeline (GaeulAgent * self)
 {
   g_autoptr (GError) error = NULL;
+  g_autofree gchar *host = NULL;
+  g_autofree gchar *mode = NULL;
+  guint port = 0;
+  GaeguliSRTMode srt_mode = GAEGULI_SRT_MODE_CALLER;
 
   g_debug ("edge is activated.");
   /* SRT connection uri is available only when activated */
 
   g_free (self->srt_target_uri);
 
-  /* TODO: request uri from chamge 
+  /* TODO: request uri from chamge
    *
    * self->srt_target_uri = chamge_edge_request_target_uri (self->edge, &error);
    */
@@ -81,11 +171,32 @@ _start_pipeline (GaeulAgent * self)
     g_warning ("failed to get srt connection uri");
   }
 
+  if (_srt_parse_uri (self->srt_target_uri, &host, &port, &mode)
+      != CHAMGE_RETURN_OK) {
+    g_warning ("failed to parse uri");
+  }
+
   g_debug ("connect to (uri: %s)", self->srt_target_uri);
 
+  if (host == NULL || port == 0) {
+    g_warning ("failed to get host or port number");
+  }
+
+  if (mode != NULL) {
+    g_debug ("uri mode : %s", mode);
+    /* if target uri mode is listener, edge should be caller
+     * and target uri mode is caller, edge should be listener */
+    if (!g_strcmp0 (mode, "listener"))
+      srt_mode = GAEGULI_SRT_MODE_CALLER;
+    else if (!g_strcmp0 (mode, "caller"))
+      srt_mode = GAEGULI_SRT_MODE_LISTENER;
+  }
+
+  g_debug ("connect to host : %s, port : %d, srt_mode : %d", host, port,
+      srt_mode);
   self->transmit_id =
-      gaeguli_fifo_transmit_start (self->transmit, "172.30.254.3", 8888,
-      GAEGULI_SRT_MODE_CALLER, &error);
+      gaeguli_fifo_transmit_start (self->transmit, host, port, srt_mode,
+      &error);
 
   self->target_stream_id =
       gaeguli_pipeline_add_fifo_target_full (self->pipeline,
