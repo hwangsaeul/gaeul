@@ -14,7 +14,7 @@
       <default>"/dev/video1"</default>
     </key>
     <key name="default-srt-target-uri" type="s">
-      <default>"srt://172.30.254.3?mode=listener"</default>
+      <default>"srt://172.30.254.3:8888?mode=listener"</default>
     </key>
   </schema>
 </schemalist>
