@@ -26,6 +26,8 @@
 #include <chamge/chamge.h>
 #include <gaeguli/gaeguli.h>
 
+#include <json-glib/json-glib.h>
+
 #define GAEUL_SCHEMA_ID "org.hwangsaeul.Gaeul"
 
 /* *INDENT-OFF* */
@@ -42,6 +44,7 @@ struct _GaeulAgent
   GSettings *settings;
   ChamgeEdge *edge;
   gulong edge_state_changed_id;
+  gulong edge_user_command_id;
   ChamgeNodeState edge_prev_state;
   GaeguliPipeline *pipeline;
   GaeguliFifoTransmit *transmit;
@@ -49,6 +52,8 @@ struct _GaeulAgent
   gchar *srt_target_uri;
   guint target_stream_id;
   guint transmit_id;
+
+  gboolean is_playing;
 };
 
 /* *INDENT-OFF* */
@@ -145,16 +150,12 @@ out:
   return res;
 }
 
-static gboolean
-_start_pipeline (GaeulAgent * self)
+
+static ChamgeReturn
+_get_srt_uri (GaeulAgent * self)
 {
   g_autoptr (GError) error = NULL;
-  g_autofree gchar *host = NULL;
-  g_autofree gchar *mode = NULL;
-  guint port = 0;
-  GaeguliSRTMode srt_mode = GAEGULI_SRT_MODE_CALLER;
 
-  g_debug ("edge is activated.");
   /* SRT connection uri is available only when activated */
 
   g_free (self->srt_target_uri);
@@ -169,14 +170,41 @@ _start_pipeline (GaeulAgent * self)
 
   if (self->srt_target_uri == NULL) {
     g_warning ("failed to get srt connection uri");
+    return CHAMGE_RETURN_FAIL;
   }
+  return CHAMGE_RETURN_OK;
+}
+
+static gboolean
+_start_pipeline (GaeulAgent * self)
+{
+  g_autoptr (GError) error = NULL;
+  g_autofree gchar *host = NULL;
+  g_autofree gchar *mode = NULL;
+  guint port = 0;
+  GaeguliSRTMode srt_mode = GAEGULI_SRT_MODE_CALLER;
+
+  if (self->is_playing) {
+    g_debug ("pipeline is already playing");
+    return G_SOURCE_REMOVE;
+  }
+  g_debug ("edge is activated.");
+  /* SRT connection uri is available only when activated */
+
+  g_debug ("connect to (uri: %s)", self->srt_target_uri);
 
   if (_srt_parse_uri (self->srt_target_uri, &host, &port, &mode)
       != CHAMGE_RETURN_OK) {
     g_warning ("failed to parse uri");
   }
 
-  g_debug ("connect to (uri: %s)", self->srt_target_uri);
+  if (host == NULL || port == 0) {
+    g_warning ("failed to get host or port number");
+  }
+
+  if (mode != NULL) {
+    g_debug ("uri mode : %s", mode);
+  }
 
   if (host == NULL || port == 0) {
     g_warning ("failed to get host or port number");
@@ -194,20 +222,46 @@ _start_pipeline (GaeulAgent * self)
 
   g_debug ("connect to host : %s, port : %d, srt_mode : %d", host, port,
       srt_mode);
-  self->transmit_id =
-      gaeguli_fifo_transmit_start (self->transmit, host, port, srt_mode,
-      &error);
-
-  self->target_stream_id =
-      gaeguli_pipeline_add_fifo_target_full (self->pipeline,
-      GAEGULI_VIDEO_CODEC_H264, GAEGULI_VIDEO_RESOLUTION_640x480,
-      gaeguli_fifo_transmit_get_fifo (self->transmit), &error);
-
+  if (self->transmit_id == 0) {
+    self->transmit_id =
+        gaeguli_fifo_transmit_start (self->transmit, host, port, srt_mode,
+        &error);
+  }
+  if (self->target_stream_id == 0) {
+    self->target_stream_id =
+        gaeguli_pipeline_add_fifo_target_full (self->pipeline,
+        GAEGULI_VIDEO_CODEC_H264, GAEGULI_VIDEO_RESOLUTION_640x480,
+        gaeguli_fifo_transmit_get_fifo (self->transmit), &error);
+  }
   g_debug ("start stream to fifo (id: %u)", self->target_stream_id);
 
+  self->is_playing = TRUE;
   gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PLAYING);
 
+  g_debug ("\n\n\n %s return \n\n\n", __func__);
   return G_SOURCE_REMOVE;
+}
+
+static gboolean
+_stop_pipeline (GaeulAgent * self)
+{
+  g_autoptr (GError) error = NULL;
+
+  if (!self->is_playing) {
+    g_debug ("pipeline is not started");
+    return CHAMGE_RETURN_FAIL;
+  }
+
+  g_debug ("stop stream to fifo (id: %u)", self->target_stream_id);
+  if (self->transmit_id > 0) {
+    gaeguli_fifo_transmit_stop (self->transmit, self->transmit_id, &error);
+    self->transmit_id = 0;
+  }
+
+  gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PAUSED);
+  self->is_playing = FALSE;
+
+  return CHAMGE_RETURN_OK;
 }
 
 static gboolean
@@ -236,7 +290,8 @@ _edge_state_changed_cb (ChamgeEdge * edge, ChamgeNodeState state,
       }
       break;
     case CHAMGE_NODE_STATE_ACTIVATED:{
-      g_idle_add ((GSourceFunc) _start_pipeline, self);
+      //self->streaming_process_id = g_idle_add ((GSourceFunc) _start_pipeline, self);
+      g_debug ("edge is activated.");
       break;
     }
     default:
@@ -244,6 +299,63 @@ _edge_state_changed_cb (ChamgeEdge * edge, ChamgeNodeState state,
   }
 
   self->edge_prev_state = state;
+}
+
+static void
+_edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
+    gchar ** response, GError ** error, GaeulAgent * self)
+{
+  g_autoptr (JsonParser) parser = json_parser_new ();
+  JsonNode *root = NULL;
+  JsonObject *json_object = NULL;
+
+  g_debug ("user command cb >> %s\n", user_command);
+  if (!json_parser_load_from_data (parser, user_command, strlen (user_command),
+          error)) {
+    g_debug ("failed to parse body: %s", (*error)->message);
+    *response = g_strdup ("{\"result\":\"failed to parse user command\"}");
+    return;
+  }
+
+  root = json_parser_get_root (parser);
+  json_object = json_node_get_object (root);
+  if (json_object_has_member (json_object, "method")) {
+    JsonNode *node = json_object_get_member (json_object, "method");
+    const gchar *method = json_node_get_string (node);
+    g_debug ("METHOD >>> %s", method);
+    if (!g_strcmp0 (method, "streamingStart")) {
+      if (!self->is_playing) {
+        if (_get_srt_uri (self) == CHAMGE_RETURN_OK) {
+          g_idle_add ((GSourceFunc) _start_pipeline, self);
+          g_debug ("streaming is starting");
+        }
+      } else {
+        g_debug ("streaming is already started");
+        *response =
+            g_strdup_printf
+            ("{\"result\":\"nok\",\"reason\":\"streaming is already started\"}");
+        goto out;
+      }
+    } else if (!g_strcmp0 (method, "streamingStop")) {
+      /* TODO : need to implement to streaming stop */
+      if (self->is_playing) {
+        _stop_pipeline (self);
+        g_debug ("streaming stopped");
+      } else {
+        g_debug ("streaming is not started");
+        *response =
+            g_strdup_printf
+            ("{\"result\":\"nok\",\"reason\":\"streaming is not started\"}");
+        goto out;
+      }
+    }
+  }
+  /* TODO : implement to execute user command and make return */
+  *response =
+      g_strdup_printf ("{\"result\":\"ok\",\"url\":\"%s\"}",
+      self->srt_target_uri);
+out:
+  g_debug ("response >> %s", *response);
 }
 
 static void
@@ -326,6 +438,7 @@ gaeul_shutdown (GApplication * app)
 
   gaeguli_fifo_transmit_stop (self->transmit, self->transmit_id, &error);
 
+  self->is_playing = FALSE;
   gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PAUSED);
 
   G_APPLICATION_CLASS (gaeul_agent_parent_class)->shutdown (app);
@@ -402,6 +515,9 @@ gaeul_agent_init (GaeulAgent * self)
   self->edge_state_changed_id =
       g_signal_connect (self->edge, "state-changed",
       G_CALLBACK (_edge_state_changed_cb), self);
+  self->edge_user_command_id =
+      g_signal_connect (self->edge, "user-command",
+      G_CALLBACK (_edge_user_command_cb), self);
 
   self->transmit = gaeguli_fifo_transmit_new ();
 }

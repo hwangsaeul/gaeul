@@ -52,6 +52,8 @@ chamge_dep = dependency('chamge', version: hwangsaeul_req_version,
 gaeguli_dep = dependency('gaeguli', version: hwangsaeul_req_version,
     fallback: ['gaeguli', 'libgaeguli_dep'])
 
+json_glib_dep = dependency ('json-glib-1.0', version: '>= 1.1.2')
+
 gnome = import('gnome')
 python3 = import('python').find_installation()
 
