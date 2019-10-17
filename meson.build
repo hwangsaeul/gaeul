@@ -47,9 +47,9 @@ gobject_dep = dependency('gobject-2.0', version: glib_req_version,
 
 hwangsaeul_req_version = '>= 0.9.0'
 
-chamge_dep = dependency('chamge', version: hwangsaeul_req_version,
+chamge_dep = dependency('chamge-1.0', version: hwangsaeul_req_version,
     fallback: ['chamge', 'libchamge_dep'])
-gaeguli_dep = dependency('gaeguli', version: hwangsaeul_req_version,
+gaeguli_dep = dependency('gaeguli-1.0', version: hwangsaeul_req_version,
     fallback: ['gaeguli', 'libgaeguli_dep'])
 
 json_glib_dep = dependency ('json-glib-1.0', version: '>= 1.1.2')
