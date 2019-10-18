@@ -55,7 +55,6 @@ gaeguli_dep = dependency('gaeguli-1.0', version: hwangsaeul_req_version,
 json_glib_dep = dependency ('json-glib-1.0', version: '>= 1.1.2')
 
 gnome = import('gnome')
-python3 = import('python').find_installation()
 
 gaeul_incs = include_directories('.', 'dbus')
 
@@ -68,4 +67,8 @@ gaeul_c_args = [
 subdir('dbus')
 subdir('agent')
 
-run_command(python3, '-c', 'import shutil; shutil.copy("hooks/pre-commit.hook", ".git/hooks/pre-commit")')
+if meson.version().version_compare('>= 0.46.0')
+  python3 = import('python').find_installation()
+  run_command(python3, '-c',
+    'import shutil; shutil.copy("hooks/pre-commit.hook", ".git/hooks/pre-commit")')
+endif
