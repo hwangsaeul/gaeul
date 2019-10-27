@@ -54,6 +54,9 @@ struct _GaeulAgent
   guint transmit_id;
 
   gboolean is_playing;
+  guint resolution;
+  guint fps;
+  guint bitrates;
 };
 
 /* *INDENT-OFF* */
@@ -63,6 +66,10 @@ G_DEFINE_TYPE (GaeulAgent, gaeul_agent, G_TYPE_APPLICATION)
 #define DBUS_STATE_PAUSED       0
 #define DBUS_STATE_PLAYING      1
 #define DBUS_STATE_RECORDING    2
+
+#define DEFAULT_RESOLUTION GAEGULI_VIDEO_RESOLUTION_1280X720
+#define DEFAULT_FPS 30
+#define DEFAULT_BITRATES 20000000
 
 static char
 _search_delimiter (const char *from, guint * position)
@@ -230,7 +237,7 @@ _start_pipeline (GaeulAgent * self)
   if (self->target_stream_id == 0) {
     self->target_stream_id =
         gaeguli_pipeline_add_fifo_target_full (self->pipeline,
-        GAEGULI_VIDEO_CODEC_H264, GAEGULI_VIDEO_RESOLUTION_640x480,
+        GAEGULI_VIDEO_CODEC_H264, self->resolution,
         gaeguli_fifo_transmit_get_fifo (self->transmit), &error);
   }
   g_debug ("start stream to fifo (id: %u)", self->target_stream_id);
@@ -256,6 +263,11 @@ _stop_pipeline (GaeulAgent * self)
   if (self->transmit_id > 0) {
     gaeguli_fifo_transmit_stop (self->transmit, self->transmit_id, &error);
     self->transmit_id = 0;
+  }
+  if (self->target_stream_id > 0) {
+    gaeguli_pipeline_remove_target (self->pipeline, self->target_stream_id,
+        &error);
+    self->target_stream_id = 0;
   }
 
   gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PAUSED);
@@ -301,6 +313,76 @@ _edge_state_changed_cb (ChamgeEdge * edge, ChamgeNodeState state,
   self->edge_prev_state = state;
 }
 
+inline guint
+_get_node_value (JsonObject * obj, const gchar * str)
+{
+  if (json_object_has_member (obj, str)) {
+    JsonNode *node = json_object_get_member (obj, str);
+    return json_node_get_int (node);
+  }
+  return 0;
+}
+
+static gboolean
+_paras_streaming_params (JsonObject * json_object, guint * resolution,
+    guint * fps, guint * bitrates)
+{
+  guint width = _get_node_value (json_object, "width");
+  guint height = _get_node_value (json_object, "height");;
+  gboolean ret = TRUE;
+  *fps = _get_node_value (json_object, "fps");
+  *bitrates = _get_node_value (json_object, "bitrates");
+  switch (width) {
+    case 640:
+      if (height != 480) {
+        g_debug ("width(%d) height(%d). resolution would be set 640x480", width,
+            height);
+      }
+      *resolution = GAEGULI_VIDEO_RESOLUTION_640x480;
+      break;
+    case 1280:
+      if (height != 7200) {
+        g_debug ("width(%d) height(%d). resolution would be set 1280x7200",
+            width, height);
+      }
+      *resolution = GAEGULI_VIDEO_RESOLUTION_1280X720;
+      break;
+    case 1920:
+      if (height != 1080) {
+        g_debug ("width(%d) height(%d). resolution would be set 1920x1080",
+            width, height);
+      }
+      *resolution = GAEGULI_VIDEO_RESOLUTION_1920X1080;
+      break;
+    case 3840:
+      if (height != 2160) {
+        g_debug ("width(%d) height(%d). resolution would be set 3840x2160",
+            width, height);
+      }
+      *resolution = GAEGULI_VIDEO_RESOLUTION_3840X2160;
+      break;
+    default:
+      *resolution = DEFAULT_RESOLUTION;
+      ret = FALSE;
+      break;
+  }
+  g_debug ("params [resolution : %d], [fps : %d], [bitrates : %d]",
+      *resolution, *fps, *bitrates);
+  if (*fps == 0) {
+    g_debug ("set default fps : 30");
+    *fps = DEFAULT_FPS;
+    ret = FALSE;
+  }
+  if (*bitrates == 0) {
+    g_debug ("set default bitrates : 209710250 (20x1024x1024)");
+    *bitrates = DEFAULT_BITRATES;
+    ret = FALSE;
+  }
+  g_debug ("final params [resolution : %d], [fps : %d], [bitrates : %d]",
+      *resolution, *fps, *bitrates);
+  return ret;
+}
+
 static void
 _edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
     gchar ** response, GError ** error, GaeulAgent * self)
@@ -326,6 +408,15 @@ _edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
     if (!g_strcmp0 (method, "streamingStart")) {
       if (!self->is_playing) {
         if (_get_srt_uri (self) == CHAMGE_RETURN_OK) {
+          if (json_object_has_member (json_object, "params")) {
+            JsonNode *node = json_object_get_member (json_object, "params");
+            _paras_streaming_params (json_node_get_object (node),
+                &(self->resolution), &(self->fps), &(self->bitrates));
+          } else {
+            self->resolution = DEFAULT_RESOLUTION;
+            self->fps = DEFAULT_FPS;
+            self->bitrates = DEFAULT_BITRATES;
+          }
           g_idle_add ((GSourceFunc) _start_pipeline, self);
           g_debug ("streaming is starting");
         }
