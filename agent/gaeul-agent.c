@@ -535,6 +535,18 @@ gaeul_shutdown (GApplication * app)
   G_APPLICATION_CLASS (gaeul_agent_parent_class)->shutdown (app);
 }
 
+static gboolean
+gaeul_agent_handle_get_edge_id (GaeulDBusManager * manager,
+    GDBusMethodInvocation * invocation, gpointer user_data)
+{
+  GaeulAgent *self = (GaeulAgent *) user_data;
+  g_autofree gchar *edge_id = g_settings_get_string (self->settings, "edge-id");
+
+  g_debug ("edge_id >> %s", edge_id);
+  gaeul_dbus_manager_complete_get_edge_id (manager, invocation, edge_id);
+  return TRUE;
+}
+
 static void
 gaeul_agent_dispose (GObject * object)
 {
@@ -587,7 +599,15 @@ gaeul_agent_init (GaeulAgent * self)
   video_source = g_settings_get_string (self->settings, "video-source");
   video_device = g_settings_get_string (self->settings, "video-device");
 
+  if (!g_strcmp0 (uid, "randomized-string")) {
+    uid = g_uuid_string_random ();
+    uid = g_compute_checksum_for_string (G_CHECKSUM_SHA256, uid, strlen (uid));
+    g_settings_set_string (self->settings, "edge-id", uid);
+  }
   g_debug ("activate edge id:[%s], encoding-method:[%s]", uid, encoding_method);
+
+  g_signal_connect (self->dbus_manager, "handle-get-edge-id",
+      G_CALLBACK (gaeul_agent_handle_get_edge_id), self);
 
   enum_class = g_type_class_ref (GAEGULI_TYPE_ENCODING_METHOD);
   enum_value = g_enum_get_value_by_nick (enum_class, encoding_method);
