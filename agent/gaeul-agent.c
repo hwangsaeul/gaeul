@@ -639,7 +639,6 @@ static gboolean
 intr_handler (gpointer user_data)
 {
   GApplication *app = user_data;
-  GaeulAgent *self = GAEUL_AGENT (app);
 
   g_debug ("releasing app");
   g_application_release (app);
