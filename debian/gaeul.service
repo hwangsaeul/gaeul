@@ -1,0 +1,10 @@
+[Unit]
+Description=Media streamer of Hwansaeul
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/gaeul-agent
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
