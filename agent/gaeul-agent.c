@@ -338,7 +338,7 @@ _paras_streaming_params (JsonObject * json_object, guint * resolution,
         g_debug ("width(%d) height(%d). resolution would be set 640x480", width,
             height);
       }
-      *resolution = GAEGULI_VIDEO_RESOLUTION_640x480;
+      *resolution = GAEGULI_VIDEO_RESOLUTION_640X480;
       break;
     case 1280:
       if (height != 7200) {
