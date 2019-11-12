@@ -230,9 +230,16 @@ _start_pipeline (GaeulAgent * self)
   g_debug ("connect to host : %s, port : %d, srt_mode : %d", host, port,
       srt_mode);
   if (self->transmit_id == 0) {
+    g_autofree gchar *edge_id = NULL;
+
+    if (chamge_node_get_uid (CHAMGE_NODE (self->edge),
+            &edge_id) != CHAMGE_RETURN_OK) {
+      g_warning ("failed to get edge ID");
+    }
+
     self->transmit_id =
-        gaeguli_fifo_transmit_start (self->transmit, host, port, srt_mode,
-        &error);
+        gaeguli_fifo_transmit_start_full (self->transmit, host, port, srt_mode,
+        edge_id, &error);
   }
   if (self->target_stream_id == 0) {
     self->target_stream_id =
