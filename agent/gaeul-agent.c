@@ -350,10 +350,21 @@ _get_node_value (JsonObject * obj, const gchar * str)
   return 0;
 }
 
+inline const gchar *
+_get_node_string (JsonObject * obj, const gchar * str)
+{
+  if (json_object_has_member (obj, str)) {
+    JsonNode *node = json_object_get_member (obj, str);
+    return json_node_get_string (node);
+  }
+  return 0;
+}
+
 static gboolean
 _paras_streaming_params (JsonObject * json_object, guint * resolution,
-    guint * fps, guint * bitrates)
+    guint * fps, guint * bitrates, gchar ** srt_target_uri)
 {
+  const gchar *srt_target_uri_tmp = NULL;
   guint width = _get_node_value (json_object, "width");
   guint height = _get_node_value (json_object, "height");;
   gboolean ret = TRUE;
@@ -393,8 +404,13 @@ _paras_streaming_params (JsonObject * json_object, guint * resolution,
       ret = FALSE;
       break;
   }
-  g_debug ("params [resolution : %d], [fps : %d], [bitrates : %d]",
-      *resolution, *fps, *bitrates);
+  srt_target_uri_tmp = _get_node_string (json_object, "uri");
+  if (srt_target_uri_tmp) {
+    g_clear_pointer (srt_target_uri, g_free);
+    *srt_target_uri = g_strdup (srt_target_uri_tmp);
+  }
+  g_debug ("params [resolution : %d], [fps : %d], [bitrates : %d], [uri : %s]",
+      *resolution, *fps, *bitrates, *srt_target_uri);
   if (*fps == 0) {
     g_debug ("set default fps : 30");
     *fps = DEFAULT_FPS;
@@ -405,8 +421,9 @@ _paras_streaming_params (JsonObject * json_object, guint * resolution,
     *bitrates = DEFAULT_BITRATES;
     ret = FALSE;
   }
-  g_debug ("final params [resolution : %d], [fps : %d], [bitrates : %d]",
-      *resolution, *fps, *bitrates);
+  g_debug
+      ("final params [resolution : %d], [fps : %d], [bitrates : %d], [uri : %s]",
+      *resolution, *fps, *bitrates, *srt_target_uri);
   return ret;
 }
 
@@ -438,7 +455,8 @@ _edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
           if (json_object_has_member (json_object, "params")) {
             JsonNode *node = json_object_get_member (json_object, "params");
             _paras_streaming_params (json_node_get_object (node),
-                &(self->resolution), &(self->fps), &(self->bitrates));
+                &(self->resolution), &(self->fps), &(self->bitrates),
+                &(self->srt_target_uri));
           } else {
             self->resolution = DEFAULT_RESOLUTION;
             self->fps = DEFAULT_FPS;
