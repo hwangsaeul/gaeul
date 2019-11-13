@@ -404,8 +404,8 @@ _paras_streaming_params (JsonObject * json_object, guint * resolution,
       break;
   }
   g_clear_pointer (srt_target_uri, g_free);
-  *srt_target_uri = g_strdup (_get_node_string (json_object, "uri"));
-  g_debug ("params [resolution : %d], [fps : %d], [bitrates : %d], [uri : %s]",
+  *srt_target_uri = g_strdup (_get_node_string (json_object, "url"));
+  g_debug ("params [resolution : %d], [fps : %d], [bitrates : %d], [url : %s]",
       *resolution, *fps, *bitrates, *srt_target_uri);
   if (*fps == 0) {
     g_debug ("set default fps : 30");
@@ -418,7 +418,7 @@ _paras_streaming_params (JsonObject * json_object, guint * resolution,
     ret = FALSE;
   }
   g_debug
-      ("final params [resolution : %d], [fps : %d], [bitrates : %d], [uri : %s]",
+      ("final params [resolution : %d], [fps : %d], [bitrates : %d], [url : %s]",
       *resolution, *fps, *bitrates, *srt_target_uri);
   return ret;
 }
