@@ -722,7 +722,8 @@ gaeul_agent_init (GaeulAgent * self)
 
   vsrc = enum_value->value;
 
-  if (!g_strcmp0 (self->edge_id, "randomized-string")) {
+  if (!g_strcmp0 (self->edge_id, "randomized-string")
+      || strlen (self->edge_id) == 0) {
     g_autofree gchar *uid = g_uuid_string_random ();
     g_autofree gchar *edge_id =
         g_compute_checksum_for_string (G_CHECKSUM_SHA256, uid, strlen (uid));
