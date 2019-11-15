@@ -58,6 +58,7 @@ struct _GaeulAgent
   ChamgeEdge *edge;
   gulong edge_state_changed_id;
   gulong edge_user_command_id;
+  gulong pipeline_stopped_id;
   ChamgeNodeState edge_prev_state;
   GaeguliPipeline *pipeline;
   GaeguliFifoTransmit *transmit;
@@ -285,19 +286,13 @@ _stop_pipeline (GaeulAgent * self)
     return CHAMGE_RETURN_FAIL;
   }
 
-  g_debug ("stop stream to fifo (id: %u)", self->target_stream_id);
-  if (self->transmit_id > 0) {
-    gaeguli_fifo_transmit_stop (self->transmit, self->transmit_id, &error);
-    self->transmit_id = 0;
-  }
-
   if (self->target_stream_id > 0) {
     gaeguli_pipeline_remove_target (self->pipeline, self->target_stream_id,
         &error);
+    g_debug ("stop stream to fifo (id: %u)", self->target_stream_id);
     self->target_stream_id = 0;
   }
 
-  gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PAUSED);
   self->is_playing = FALSE;
 
   return CHAMGE_RETURN_OK;
@@ -461,6 +456,13 @@ _edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
         } else {
           g_warning ("Couldn't determine SRT URI for streaming");
         }
+      } else if (gaeul_dbus_manager_get_state (self->dbus_manager) !=
+          DBUS_STATE_PAUSED) {
+        g_debug ("streaming is stopping");
+        *response =
+            g_strdup_printf
+            ("{\"result\":\"nok\",\"reason\":\"streaming is stopping, please try later\"}");
+        goto out;
       } else {
         g_debug ("streaming is already started");
         *response =
@@ -545,9 +547,25 @@ gaeul_shutdown (GApplication * app)
 
   g_debug ("shutdown");
 
+  if (self->pipeline_stopped_id > 0) {
+    g_signal_handler_disconnect (self->pipeline, self->pipeline_stopped_id);
+    self->pipeline_stopped_id = 0;
+  }
   if (self->target_stream_id > 0) {
     gaeguli_pipeline_remove_target (self->pipeline, self->target_stream_id,
         &error);
+    g_debug ("stop stream to fifo (id: %u)", self->target_stream_id);
+    self->target_stream_id = 0;
+  }
+  if (self->pipeline != NULL) {
+    g_debug ("pipeline stop");
+    gaeguli_pipeline_stop (self->pipeline);
+  }
+
+  if (self->transmit_id > 0) {
+    gaeguli_fifo_transmit_stop (self->transmit, self->transmit_id, &error);
+    g_debug ("Removed fifo %u", self->transmit_id);
+    self->transmit_id = 0;
   }
 
   if (self->edge_state_changed_id > 0) {
@@ -565,10 +583,6 @@ gaeul_shutdown (GApplication * app)
     case CHAMGE_NODE_STATE_NULL:
       g_debug ("edge is NULL state now");
   }
-
-  gaeguli_pipeline_stop (self->pipeline);
-
-  gaeguli_fifo_transmit_stop (self->transmit, self->transmit_id, &error);
 
   self->is_playing = FALSE;
   gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PAUSED);
@@ -655,6 +669,21 @@ gaeul_agent_set_property (GObject * object,
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
   }
+}
+
+static void
+stream_stopped_cb (GaeguliPipeline * pipeline, guint target_id,
+    GaeulAgent * self)
+{
+  g_autoptr (GError) error = NULL;
+
+  if (self->transmit_id > 0) {
+    gaeguli_fifo_transmit_stop (self->transmit, self->transmit_id, &error);
+    g_debug ("Removed fifo %u", self->transmit_id);
+    self->transmit_id = 0;
+  }
+
+  gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PAUSED);
 }
 
 static void
@@ -746,6 +775,10 @@ gaeul_agent_init (GaeulAgent * self)
   self->edge_user_command_id =
       g_signal_connect (self->edge, "user-command",
       G_CALLBACK (_edge_user_command_cb), self);
+
+  self->pipeline_stopped_id =
+      g_signal_connect (self->pipeline, "stream-stopped",
+      (GCallback) stream_stopped_cb, self);
 
   self->transmit = gaeguli_fifo_transmit_new ();
 }
