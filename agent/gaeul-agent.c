@@ -692,7 +692,7 @@ stream_stopped_cb (GaeguliPipeline * pipeline, guint target_id,
 {
   g_autoptr (GError) error = NULL;
 
-  if (self->transmit_id > 0) {
+  if (!self->is_playing && self->transmit_id > 0) {
     gaeguli_fifo_transmit_stop (self->transmit, self->transmit_id, &error);
     g_debug ("Removed fifo %u", self->transmit_id);
     self->transmit_id = 0;
