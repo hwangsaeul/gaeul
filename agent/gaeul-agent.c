@@ -74,7 +74,7 @@ struct _GaeulAgent
   guint bitrates;
 
   gchar *edge_id;
-  gchar *encoding_method;
+  GaeguliEncodingMethod encoding_method;
   gchar *video_source;
   gchar *video_device;
 };
@@ -629,7 +629,7 @@ gaeul_agent_get_property (GObject * object,
       g_value_set_string (value, self->edge_id);
       break;
     case PROP_ENCODING_METHOD:
-      g_value_set_string (value, self->encoding_method);
+      g_value_set_enum (value, self->encoding_method);
       break;
     case PROP_VIDEO_SOURCE:
       g_value_set_string (value, self->video_source);
@@ -654,8 +654,7 @@ gaeul_agent_set_property (GObject * object,
       self->edge_id = g_value_dup_string (value);
       break;
     case PROP_ENCODING_METHOD:
-      g_free (self->encoding_method);
-      self->encoding_method = g_value_dup_string (value);
+      self->encoding_method = g_value_get_enum (value);
       break;
     case PROP_VIDEO_SOURCE:
       g_free (self->video_source);
@@ -699,9 +698,12 @@ gaeul_agent_class_init (GaeulAgentClass * klass)
   properties[PROP_EDGE_ID] =
       g_param_spec_string ("edge-id", "edge-id", "edge-id", NULL,
       G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+
   properties[PROP_ENCODING_METHOD] =
-      g_param_spec_string ("encoding-method", "encoding-method",
-      "encoding-method", NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+      g_param_spec_enum ("encoding-method", "encoding-method",
+      "encoding-method", GAEGULI_TYPE_ENCODING_METHOD,
+      GAEGULI_ENCODING_METHOD_NVIDIA_TX1,
+      G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
 
   properties[PROP_VIDEO_SOURCE] =
       g_param_spec_string ("video-source", "video-source", "video-source", NULL,
@@ -720,6 +722,37 @@ gaeul_agent_class_init (GaeulAgentClass * klass)
   app_class->shutdown = gaeul_shutdown;
 }
 
+static gboolean
+_settings_map_get_encoding_method (GValue * value, GVariant * variant,
+    gpointer user_data)
+{
+  GEnumValue *ev = g_enum_get_value_by_nick
+      (g_type_class_peek (GAEGULI_TYPE_ENCODING_METHOD),
+      g_variant_get_string (variant, NULL));
+
+  if (ev) {
+    g_value_set_enum (value, ev->value);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+static GVariant *
+_settings_map_set_encoding_method (const GValue * value,
+    const GVariantType * expected_type, gpointer user_data)
+{
+  GEnumValue *ev = g_enum_get_value
+      (g_type_class_peek (GAEGULI_TYPE_ENCODING_METHOD),
+      g_value_get_enum (value));
+
+  if (ev) {
+    return g_variant_new_string (ev->value_nick);
+  }
+
+  return NULL;
+}
+
 static void
 gaeul_agent_init (GaeulAgent * self)
 {
@@ -727,24 +760,20 @@ gaeul_agent_init (GaeulAgent * self)
   g_autoptr (GEnumClass) enum_class = NULL;
 
   GaeguliVideoSource vsrc;
-  GaeguliEncodingMethod enc;
 
   self->dbus_manager = gaeul_dbus_manager_skeleton_new ();
   self->settings = g_settings_new (GAEUL_SCHEMA_ID);
 
   g_settings_bind (self->settings, "edge-id", self, "edge-id",
       G_SETTINGS_BIND_DEFAULT);
-  g_settings_bind (self->settings, "encoding-method", self, "encoding-method",
-      G_SETTINGS_BIND_DEFAULT);
+  g_settings_bind_with_mapping (self->settings, "encoding-method",
+      self, "encoding-method", G_SETTINGS_BIND_DEFAULT,
+      _settings_map_get_encoding_method, _settings_map_set_encoding_method,
+      NULL, NULL);
   g_settings_bind (self->settings, "video-source", self, "video-source",
       G_SETTINGS_BIND_DEFAULT);
   g_settings_bind (self->settings, "video-device", self, "video-device",
       G_SETTINGS_BIND_DEFAULT);
-
-  enum_class = g_type_class_ref (GAEGULI_TYPE_ENCODING_METHOD);
-  enum_value = g_enum_get_value_by_nick (enum_class, self->encoding_method);
-
-  enc = enum_value->value;
 
   enum_class = g_type_class_ref (GAEGULI_TYPE_VIDEO_SOURCE);
   enum_value = g_enum_get_value_by_nick (enum_class, self->video_source);
@@ -760,14 +789,16 @@ gaeul_agent_init (GaeulAgent * self)
   }
 
   g_debug ("activate edge id:[%s], encoding-method:[%s]", self->edge_id,
-      self->encoding_method);
+      g_enum_get_value (g_type_class_peek (GAEGULI_TYPE_ENCODING_METHOD),
+          self->encoding_method)->value_nick);
 
   g_signal_connect (self->dbus_manager, "handle-get-edge-id",
       G_CALLBACK (gaeul_agent_handle_get_edge_id), self);
 
   self->edge = chamge_edge_new (self->edge_id);
   self->edge_prev_state = CHAMGE_NODE_STATE_NULL;
-  self->pipeline = gaeguli_pipeline_new_full (vsrc, self->video_device, enc);
+  self->pipeline = gaeguli_pipeline_new_full (vsrc, self->video_device,
+      self->encoding_method);
 
   self->edge_state_changed_id =
       g_signal_connect (self->edge, "state-changed",
