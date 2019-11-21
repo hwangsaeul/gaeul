@@ -211,10 +211,6 @@ _start_pipeline (GaeulAgent * self)
   guint port = 0;
   GaeguliSRTMode srt_mode = GAEGULI_SRT_MODE_CALLER;
 
-  if (self->is_playing) {
-    g_debug ("pipeline is already playing");
-    return G_SOURCE_REMOVE;
-  }
   g_debug ("edge is activated.");
   /* SRT connection uri is available only when activated */
 
@@ -269,22 +265,16 @@ _start_pipeline (GaeulAgent * self)
   }
   g_debug ("start stream to fifo (id: %u)", self->target_stream_id);
 
-  self->is_playing = TRUE;
   gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PLAYING);
 
   g_debug ("\n\n\n %s return \n\n\n", __func__);
   return G_SOURCE_REMOVE;
 }
 
-static gboolean
+static void
 _stop_pipeline (GaeulAgent * self)
 {
   g_autoptr (GError) error = NULL;
-
-  if (!self->is_playing) {
-    g_debug ("pipeline is not started");
-    return CHAMGE_RETURN_FAIL;
-  }
 
   if (self->target_stream_id > 0) {
     gaeguli_pipeline_remove_target (self->pipeline, self->target_stream_id,
@@ -292,10 +282,6 @@ _stop_pipeline (GaeulAgent * self)
     g_debug ("stop stream to fifo (id: %u)", self->target_stream_id);
     self->target_stream_id = 0;
   }
-
-  self->is_playing = FALSE;
-
-  return CHAMGE_RETURN_OK;
 }
 
 static gboolean
@@ -453,6 +439,7 @@ _edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
         if (self->srt_target_uri) {
           g_idle_add ((GSourceFunc) _start_pipeline, self);
           g_debug ("streaming is starting");
+          self->is_playing = TRUE;
         } else {
           g_warning ("Couldn't determine SRT URI for streaming");
         }
@@ -474,6 +461,7 @@ _edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
       /* TODO : need to implement to streaming stop */
       if (self->is_playing) {
         _stop_pipeline (self);
+        self->is_playing = FALSE;
         g_debug ("streaming stopped");
       } else {
         g_debug ("streaming is not started");
