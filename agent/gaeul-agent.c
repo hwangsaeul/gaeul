@@ -405,6 +405,13 @@ _paras_streaming_params (JsonObject * json_object, guint * resolution,
 }
 
 static void
+gaeul_agent_start_pipeline (GaeulAgent * self)
+{
+  g_debug ("Scheduling start of streaming pipeline");
+  g_idle_add_full (G_PRIORITY_HIGH, (GSourceFunc) _start_pipeline, self, NULL);
+}
+
+static void
 _edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
     gchar ** response, GError ** error, GaeulAgent * self)
 {
@@ -437,8 +444,7 @@ _edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
         if (!self->srt_target_uri)
           _get_srt_uri (self);
         if (self->srt_target_uri) {
-          g_idle_add ((GSourceFunc) _start_pipeline, self);
-          g_debug ("streaming is starting");
+          gaeul_agent_start_pipeline (self);
           self->is_playing = TRUE;
         } else {
           g_warning ("Couldn't determine SRT URI for streaming");
