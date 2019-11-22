@@ -484,6 +484,21 @@ _edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
             ("{\"result\":\"nok\",\"reason\":\"streaming is not started\"}");
         goto out;
       }
+    } else if (!g_strcmp0 (method, "streamingChangeParameters")) {
+      if (!self->is_playing) {
+        *response = g_strdup_printf
+            ("{\"result\":\"nok\",\"reason\":\"streaming is not started\"}");
+        goto out;
+      }
+      if (!json_object_has_member (json_object, "params")) {
+        *response = g_strdup_printf
+            ("{\"result\":\"nok\",\"reason\":\"no streaming parameters in request\"}");
+        goto out;
+      }
+      _parse_streaming_params (json_object, &(self->resolution), &(self->fps),
+          &(self->bitrates), NULL);
+      _stop_pipeline (self);
+      gaeul_agent_start_pipeline (self);
     }
   }
   /* TODO : implement to execute user command and make return */
