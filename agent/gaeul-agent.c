@@ -341,13 +341,23 @@ _get_node_string (JsonObject * obj, const gchar * str)
   return 0;
 }
 
-static gboolean
-_paras_streaming_params (JsonObject * json_object, guint * resolution,
-    guint * fps, guint * bitrates, gchar ** srt_target_uri)
+static void
+_parse_streaming_params (JsonObject * json_object,
+    GaeguliVideoResolution * resolution, guint * fps, guint * bitrates,
+    gchar ** srt_target_uri)
 {
-  guint width = _get_node_value (json_object, "width");
-  guint height = _get_node_value (json_object, "height");;
-  gboolean ret = TRUE;
+  guint width;
+  guint height;
+
+  if (!json_object_has_member (json_object, "params")) {
+    return;
+  }
+
+  json_object =
+      json_node_get_object (json_object_get_member (json_object, "params"));
+
+  width = _get_node_value (json_object, "width");
+  height = _get_node_value (json_object, "height");
   *fps = _get_node_value (json_object, "fps");
   *bitrates = _get_node_value (json_object, "bitrates");
   switch (width) {
@@ -381,27 +391,26 @@ _paras_streaming_params (JsonObject * json_object, guint * resolution,
       break;
     default:
       *resolution = DEFAULT_RESOLUTION;
-      ret = FALSE;
       break;
   }
-  g_clear_pointer (srt_target_uri, g_free);
-  *srt_target_uri = g_strdup (_get_node_string (json_object, "url"));
+  if (srt_target_uri) {
+    g_clear_pointer (srt_target_uri, g_free);
+    *srt_target_uri = g_strdup (_get_node_string (json_object, "url"));
+  }
+
   g_debug ("params [resolution : %d], [fps : %d], [bitrates : %d], [url : %s]",
-      *resolution, *fps, *bitrates, *srt_target_uri);
+      *resolution, *fps, *bitrates, _get_node_string (json_object, "url"));
   if (*fps == 0) {
     g_debug ("set default fps : 30");
     *fps = DEFAULT_FPS;
-    ret = FALSE;
   }
   if (*bitrates == 0) {
     g_debug ("set default bitrates : 209710250 (20x1024x1024)");
     *bitrates = DEFAULT_BITRATES;
-    ret = FALSE;
   }
   g_debug
       ("final params [resolution : %d], [fps : %d], [bitrates : %d], [url : %s]",
-      *resolution, *fps, *bitrates, *srt_target_uri);
-  return ret;
+      *resolution, *fps, *bitrates, _get_node_string (json_object, "url"));
 }
 
 static void
@@ -436,8 +445,7 @@ _edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
     if (!g_strcmp0 (method, "streamingStart")) {
       if (!self->is_playing) {
         if (json_object_has_member (json_object, "params")) {
-          JsonNode *node = json_object_get_member (json_object, "params");
-          _paras_streaming_params (json_node_get_object (node),
+          _parse_streaming_params (json_object,
               &(self->resolution), &(self->fps), &(self->bitrates),
               &(self->srt_target_uri));
         }
