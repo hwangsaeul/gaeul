@@ -11,7 +11,8 @@ Build-Depends: debhelper (>= 10~),
   libssl-dev,
   librabbitmq-dev,
   libsrt-dev,
-  libgstreamer1.0-dev
+  libgstreamer1.0-dev,
+  libgstreamer-plugins-bad1.0-dev  
 Standards-Version: 4.2.1
 Section: libs
 Homepage: https://github.com/hwangsaeul/gaeul
