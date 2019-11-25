@@ -260,7 +260,7 @@ _start_pipeline (GaeulAgent * self)
   if (self->target_stream_id == 0) {
     self->target_stream_id =
         gaeguli_pipeline_add_fifo_target_full (self->pipeline,
-        GAEGULI_VIDEO_CODEC_H264, self->resolution,
+        GAEGULI_VIDEO_CODEC_H264, self->resolution, self->fps, self->bitrates,
         gaeguli_fifo_transmit_get_fifo (self->transmit), &error);
   }
   g_debug ("start stream to fifo (id: %u)", self->target_stream_id);
