@@ -324,7 +324,7 @@ _edge_state_changed_cb (ChamgeEdge * edge, ChamgeNodeState state,
 static inline guint
 _get_node_value (JsonObject * obj, const gchar * str)
 {
-  if (json_object_has_member (obj, str)) {
+  if (obj && json_object_has_member (obj, str)) {
     JsonNode *node = json_object_get_member (obj, str);
     return json_node_get_int (node);
   }
@@ -334,7 +334,7 @@ _get_node_value (JsonObject * obj, const gchar * str)
 static inline const gchar *
 _get_node_string (JsonObject * obj, const gchar * str)
 {
-  if (json_object_has_member (obj, str)) {
+  if (obj && json_object_has_member (obj, str)) {
     JsonNode *node = json_object_get_member (obj, str);
     return json_node_get_string (node);
   }
@@ -348,10 +348,6 @@ _parse_streaming_params (JsonObject * json_object,
 {
   guint width;
   guint height;
-
-  if (!json_object_has_member (json_object, "params")) {
-    return;
-  }
 
   json_object =
       json_node_get_object (json_object_get_member (json_object, "params"));
@@ -444,11 +440,9 @@ _edge_user_command_cb (ChamgeEdge * edge, const gchar * user_command,
     g_debug ("METHOD >>> %s", method);
     if (!g_strcmp0 (method, "streamingStart")) {
       if (!self->is_playing) {
-        if (json_object_has_member (json_object, "params")) {
-          _parse_streaming_params (json_object,
-              &(self->resolution), &(self->fps), &(self->bitrates),
-              &(self->srt_target_uri));
-        }
+        _parse_streaming_params (json_object,
+            &(self->resolution), &(self->fps), &(self->bitrates),
+            &(self->srt_target_uri));
         if (!self->srt_target_uri)
           _get_srt_uri (self);
         if (self->srt_target_uri) {
