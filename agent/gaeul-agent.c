@@ -321,7 +321,7 @@ _edge_state_changed_cb (ChamgeEdge * edge, ChamgeNodeState state,
   self->edge_prev_state = state;
 }
 
-inline guint
+static inline guint
 _get_node_value (JsonObject * obj, const gchar * str)
 {
   if (json_object_has_member (obj, str)) {
@@ -331,7 +331,7 @@ _get_node_value (JsonObject * obj, const gchar * str)
   return 0;
 }
 
-inline const gchar *
+static inline const gchar *
 _get_node_string (JsonObject * obj, const gchar * str)
 {
   if (json_object_has_member (obj, str)) {
