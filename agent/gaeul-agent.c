@@ -77,6 +77,8 @@ struct _GaeulAgent
   GaeguliEncodingMethod encoding_method;
   GaeguliVideoSource video_source;
   gchar *video_device;
+
+  gint exit_status;
 };
 
 /* *INDENT-OFF* */
@@ -523,6 +525,7 @@ _dbus_name_acquired (GDBusConnection * connection, const gchar * name,
           "/org/hwangsaeul/Gaeul/Manager", &error)) {
     g_warning ("Failed to export Gaeul D-Bus interface (reason: %s)",
         error->message);
+    self->exit_status = 1;
     g_application_quit (G_APPLICATION (self));
     return;
   }
@@ -542,6 +545,7 @@ _dbus_name_lost (GDBusConnection * connection, const gchar * name,
     g_warning ("Couldn't connect to D-Bus");
   }
 
+  self->exit_status = 1;
   g_application_quit (G_APPLICATION (self));
 }
 
@@ -819,6 +823,12 @@ gaeul_agent_init (GaeulAgent * self)
   self->transmit = gaeguli_fifo_transmit_new ();
 }
 
+static int
+gaeul_agent_get_exit_status (GaeulAgent * agent)
+{
+  return agent->exit_status;
+}
+
 static guint signal_watch_intr_id;
 
 static gboolean
@@ -854,5 +864,5 @@ main (int argc, char **argv)
     g_source_remove (signal_watch_intr_id);
   }
 
-  return ret;
+  return (ret == 0) ? gaeul_agent_get_exit_status (GAEUL_AGENT (app)) : ret;
 }
