@@ -48,3 +48,8 @@ libgaeul_dbus_dep = declare_dependency(link_with: libgaeul_dbus,
   include_directories: [ gaeul_incs ],
   dependencies: [ gio_dep ]
 )
+
+install_data(
+  'org.hwangsaeul.Gaeul.conf',
+  install_dir : join_paths(get_option('datadir'), 'dbus-1', 'system.d')
+)
