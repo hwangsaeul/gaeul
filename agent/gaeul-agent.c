@@ -91,6 +91,9 @@ G_DEFINE_TYPE (GaeulAgent, gaeul_agent, G_TYPE_APPLICATION)
 #define DEFAULT_FPS 30
 #define DEFAULT_BITRATES 20000000
 
+static gboolean gaeul_agent_handle_get_edge_id (GaeulDBusManager * manager,
+    GDBusMethodInvocation * invocation, gpointer user_data);
+
 static char
 _search_delimiter (const char *from, guint * position)
 {
@@ -504,49 +507,52 @@ out:
 }
 
 static void
-gaeul_agent_activate (GApplication * app)
+_dbus_name_acquired (GDBusConnection * connection, const gchar * name,
+    gpointer user_data)
 {
-  GaeulAgent *self = GAEUL_AGENT (app);
+  GaeulAgent *self = user_data;
 
-  g_debug ("activate");
+  g_autoptr (GError) error = NULL;
+
+  self->dbus_manager = gaeul_dbus_manager_skeleton_new ();
+  g_signal_connect (self->dbus_manager, "handle-get-edge-id",
+      G_CALLBACK (gaeul_agent_handle_get_edge_id), self);
+
+  if (!g_dbus_interface_skeleton_export
+      (G_DBUS_INTERFACE_SKELETON (self->dbus_manager), connection,
+          "/org/hwangsaeul/Gaeul/Manager", &error)) {
+    g_warning ("Failed to export Gaeul D-Bus interface (reason: %s)",
+        error->message);
+    g_application_quit (G_APPLICATION (self));
+    return;
+  }
 
   chamge_node_enroll (CHAMGE_NODE (self->edge), FALSE);
 }
 
-static gboolean
-gaeul_agent_dbus_register (GApplication * app,
-    GDBusConnection * connection, const gchar * object_path, GError ** error)
+static void
+_dbus_name_lost (GDBusConnection * connection, const gchar * name,
+    gpointer user_data)
 {
-  gboolean ret = TRUE;
-  GaeulAgent *self = GAEUL_AGENT (app);
+  GaeulAgent *self = user_data;
 
-  /* chain up */
-  ret = G_APPLICATION_CLASS (gaeul_agent_parent_class)->dbus_register (app,
-      connection, object_path, error);
-  if (ret &&
-      !g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON
-          (self->dbus_manager), connection, "/org/hwangsaeul/Gaeul/Manager",
-          error)) {
-    g_warning ("Failed to export Gaeul D-Bus interface (reason: %s)",
-        (*error)->message);
+  if (connection) {
+    g_warning ("Couldn't acquire '%s' on D-Bus", name);
+  } else {
+    g_warning ("Couldn't connect to D-Bus");
   }
 
-  return ret;
+  g_application_quit (G_APPLICATION (self));
 }
 
 static void
-gaeul_agent_dbus_unregister (GApplication * app,
-    GDBusConnection * connection, const gchar * object_path)
+gaeul_agent_activate (GApplication * app)
 {
-  GaeulAgent *self = GAEUL_AGENT (app);
+  g_debug ("activate");
 
-  if (self->dbus_manager)
-    g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON
-        (self->dbus_manager));
-
-  /* chain up */
-  G_APPLICATION_CLASS (gaeul_agent_parent_class)->dbus_unregister (app,
-      connection, object_path);
+  g_bus_own_name ((getppid () == 1) ? G_BUS_TYPE_SYSTEM : G_BUS_TYPE_SESSION,
+      "org.hwangsaeul.Gaeul", 0, NULL, _dbus_name_acquired, _dbus_name_lost,
+      app, NULL);
 }
 
 static void
@@ -596,7 +602,9 @@ gaeul_shutdown (GApplication * app)
   }
 
   self->is_playing = FALSE;
-  gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PAUSED);
+  if (self->dbus_manager) {
+    gaeul_dbus_manager_set_state (self->dbus_manager, DBUS_STATE_PAUSED);
+  }
 
   G_APPLICATION_CLASS (gaeul_agent_parent_class)->shutdown (app);
 }
@@ -728,8 +736,6 @@ gaeul_agent_class_init (GaeulAgentClass * klass)
       properties);
 
   app_class->activate = gaeul_agent_activate;
-  app_class->dbus_register = gaeul_agent_dbus_register;
-  app_class->dbus_unregister = gaeul_agent_dbus_unregister;
   app_class->shutdown = gaeul_shutdown;
 }
 
@@ -764,7 +770,6 @@ _settings_map_set_enum (const GValue * value,
 static void
 gaeul_agent_init (GaeulAgent * self)
 {
-  self->dbus_manager = gaeul_dbus_manager_skeleton_new ();
   self->settings = g_settings_new (GAEUL_SCHEMA_ID);
 
   g_settings_bind (self->settings, "edge-id", self, "edge-id",
@@ -794,9 +799,6 @@ gaeul_agent_init (GaeulAgent * self)
   g_debug ("activate edge id:[%s], encoding-method:[%s]", self->edge_id,
       g_enum_get_value (g_type_class_peek (GAEGULI_TYPE_ENCODING_METHOD),
           self->encoding_method)->value_nick);
-
-  g_signal_connect (self->dbus_manager, "handle-get-edge-id",
-      G_CALLBACK (gaeul_agent_handle_get_edge_id), self);
 
   self->edge = chamge_edge_new (self->edge_id);
   self->edge_prev_state = CHAMGE_NODE_STATE_NULL;
@@ -839,22 +841,12 @@ main (int argc, char **argv)
   g_autoptr (GError) error = NULL;
   int ret;
 
-  app = G_APPLICATION (g_object_new (GAEUL_TYPE_AGENT,
-          "application-id", "org.hwangsaeul.Gaeul",
-          "flags", G_APPLICATION_IS_SERVICE, NULL));
+  app = G_APPLICATION (g_object_new (GAEUL_TYPE_AGENT, NULL));
 
   signal_watch_intr_id =
       g_unix_signal_add (SIGINT, (GSourceFunc) intr_handler, app);
-  g_application_set_inactivity_timeout (app, 1000);
-
-  if (!g_application_register (app, NULL, &error)) {
-    g_debug ("failed to register app (reason: %s)", error->message);
-    return -1;
-  }
 
   g_application_hold (app);
-
-  g_application_activate (app);
 
   ret = g_application_run (app, argc, argv);
 
