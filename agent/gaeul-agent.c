@@ -829,8 +829,6 @@ gaeul_agent_get_exit_status (GaeulAgent * agent)
   return agent->exit_status;
 }
 
-static guint signal_watch_intr_id;
-
 static gboolean
 intr_handler (gpointer user_data)
 {
@@ -838,8 +836,6 @@ intr_handler (gpointer user_data)
 
   g_debug ("releasing app");
   g_application_release (app);
-
-  signal_watch_intr_id = 0;
 
   return G_SOURCE_REMOVE;
 }
@@ -853,16 +849,11 @@ main (int argc, char **argv)
 
   app = G_APPLICATION (g_object_new (GAEUL_TYPE_AGENT, NULL));
 
-  signal_watch_intr_id =
-      g_unix_signal_add (SIGINT, (GSourceFunc) intr_handler, app);
+  g_unix_signal_add (SIGINT, (GSourceFunc) intr_handler, app);
 
   g_application_hold (app);
 
   ret = g_application_run (app, argc, argv);
-
-  if (signal_watch_intr_id > 0) {
-    g_source_remove (signal_watch_intr_id);
-  }
 
   return (ret == 0) ? gaeul_agent_get_exit_status (GAEUL_AGENT (app)) : ret;
 }
