@@ -47,7 +47,7 @@ typedef enum
   PROP_LAST
 } _GaeulAgentProperty;
 
-static GParamSpec *properties[PROP_LAST + 1];
+static GParamSpec *properties[PROP_LAST] = { NULL };
 
 struct _GaeulAgent
 {
