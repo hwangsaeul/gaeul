@@ -774,7 +774,7 @@ _settings_map_set_enum (const GValue * value,
 static void
 gaeul_agent_init (GaeulAgent * self)
 {
-  self->settings = g_settings_new (GAEUL_SCHEMA_ID);
+  self->settings = chamge_common_gsettings_new (GAEUL_SCHEMA_ID);
 
   g_settings_bind (self->settings, "edge-id", self, "edge-id",
       G_SETTINGS_BIND_DEFAULT);
