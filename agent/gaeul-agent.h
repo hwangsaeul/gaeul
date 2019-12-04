@@ -19,13 +19,12 @@
 #ifndef __GAEUL_AGENT_H__
 #define __GAEUL_AGENT_H__
 
-#include <glib-object.h>
-#include <gio/gio.h>
+#include <hwangsaeul/application.h>
 
 G_BEGIN_DECLS
 
 #define GAEUL_TYPE_AGENT                (gaeul_agent_get_type ())
-G_DECLARE_FINAL_TYPE                    (GaeulAgent, gaeul_agent, GAEUL, AGENT, GApplication)
+G_DECLARE_FINAL_TYPE                    (GaeulAgent, gaeul_agent, GAEUL, AGENT, HwangsaeulApplication)
 
 G_END_DECLS
 

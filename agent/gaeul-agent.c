@@ -51,7 +51,7 @@ static GParamSpec *properties[PROP_LAST] = { NULL };
 
 struct _GaeulAgent
 {
-  GApplication parent;
+  HwangsaeulApplication parent;
   GaeulDBusManager *dbus_manager;
 
   GSettings *settings;
@@ -77,12 +77,10 @@ struct _GaeulAgent
   GaeguliEncodingMethod encoding_method;
   GaeguliVideoSource video_source;
   gchar *video_device;
-
-  gint exit_status;
 };
 
 /* *INDENT-OFF* */
-G_DEFINE_TYPE (GaeulAgent, gaeul_agent, G_TYPE_APPLICATION)
+G_DEFINE_TYPE (GaeulAgent, gaeul_agent, HWANGSAEUL_TYPE_APPLICATION)
 /* *INDENT-ON* */
 
 #define DBUS_STATE_PAUSED       0
@@ -508,55 +506,19 @@ out:
   g_debug ("response >> %s", *response);
 }
 
-static void
-_dbus_name_acquired (GDBusConnection * connection, const gchar * name,
-    gpointer user_data)
+static gboolean
+gaeul_agent_dbus_register (GApplication *application,
+    GDBusConnection * connection, const gchar * name, GError **error)
 {
-  GaeulAgent *self = user_data;
-
-  g_autoptr (GError) error = NULL;
+  GaeulAgent *self = GAEUL_AGENT (application);
 
   self->dbus_manager = gaeul_dbus_manager_skeleton_new ();
   g_signal_connect (self->dbus_manager, "handle-get-edge-id",
       G_CALLBACK (gaeul_agent_handle_get_edge_id), self);
 
-  if (!g_dbus_interface_skeleton_export
+  return g_dbus_interface_skeleton_export
       (G_DBUS_INTERFACE_SKELETON (self->dbus_manager), connection,
-          "/org/hwangsaeul/Gaeul/Manager", &error)) {
-    g_warning ("Failed to export Gaeul D-Bus interface (reason: %s)",
-        error->message);
-    self->exit_status = 1;
-    g_application_quit (G_APPLICATION (self));
-    return;
-  }
-
-  chamge_node_enroll (CHAMGE_NODE (self->edge), FALSE);
-}
-
-static void
-_dbus_name_lost (GDBusConnection * connection, const gchar * name,
-    gpointer user_data)
-{
-  GaeulAgent *self = user_data;
-
-  if (connection) {
-    g_warning ("Couldn't acquire '%s' on D-Bus", name);
-  } else {
-    g_warning ("Couldn't connect to D-Bus");
-  }
-
-  self->exit_status = 1;
-  g_application_quit (G_APPLICATION (self));
-}
-
-static void
-gaeul_agent_activate (GApplication * app)
-{
-  g_debug ("activate");
-
-  g_bus_own_name ((getppid () == 1) ? G_BUS_TYPE_SYSTEM : G_BUS_TYPE_SESSION,
-      "org.hwangsaeul.Gaeul", 0, NULL, _dbus_name_acquired, _dbus_name_lost,
-      app, NULL);
+      "/org/hwangsaeul/Gaeul/Manager", error);
 }
 
 static void
@@ -708,6 +670,14 @@ stream_stopped_cb (GaeguliPipeline * pipeline, guint target_id,
 }
 
 static void
+gaeul_agent_activate (GApplication *app)
+{
+  GaeulAgent *self = GAEUL_AGENT (app);
+
+  chamge_node_enroll (CHAMGE_NODE (self->edge), FALSE);
+}
+
+static void
 gaeul_agent_class_init (GaeulAgentClass * klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
@@ -739,6 +709,7 @@ gaeul_agent_class_init (GaeulAgentClass * klass)
   g_object_class_install_properties (object_class, G_N_ELEMENTS (properties),
       properties);
 
+  app_class->dbus_register = gaeul_agent_dbus_register;
   app_class->activate = gaeul_agent_activate;
   app_class->shutdown = gaeul_shutdown;
 }
@@ -823,12 +794,6 @@ gaeul_agent_init (GaeulAgent * self)
   self->transmit = gaeguli_fifo_transmit_new ();
 }
 
-static int
-gaeul_agent_get_exit_status (GaeulAgent * agent)
-{
-  return agent->exit_status;
-}
-
 static gboolean
 intr_handler (gpointer user_data)
 {
@@ -845,15 +810,14 @@ main (int argc, char **argv)
 {
   g_autoptr (GApplication) app = NULL;
   g_autoptr (GError) error = NULL;
-  int ret;
 
-  app = G_APPLICATION (g_object_new (GAEUL_TYPE_AGENT, NULL));
+  app = G_APPLICATION (g_object_new (GAEUL_TYPE_AGENT,
+      "application-id", GAEUL_SCHEMA_ID,
+      NULL));
 
   g_unix_signal_add (SIGINT, (GSourceFunc) intr_handler, app);
 
   g_application_hold (app);
 
-  ret = g_application_run (app, argc, argv);
-
-  return (ret == 0) ? gaeul_agent_get_exit_status (GAEUL_AGENT (app)) : ret;
+  return hwangsaeul_application_run (HWANGSAEUL_APPLICATION (app), argc, argv);
 }
