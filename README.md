@@ -1,5 +1,4 @@
 # Gaeul
-*개울*은 드론 프로젝트에서 사용하기 위한 드론용 어플리케이션 입니다.
 *Gaeul* is streaming server for Edge devices based on SRT protocol
 
 ## Overview
