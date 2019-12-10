@@ -3,9 +3,9 @@
 
 ## Overview
 Gaeul Agent is the streaming server of the project. It uses
-* [chamge]([https://github.com/hwangsaeul/chamge) to register to the network and receive messages
+* [**chamge**](https://github.com/hwangsaeul/chamge): to register to the network and receive messages
 
-* [gaeugli](https://github.com/hwangsaeul/gaeguli) to handle the SRT streaming
+* [**gaeugli**](https://github.com/hwangsaeul/gaeguli): to handle the SRT streaming
 
 At start, `Gaeul Agent` registers itself in the network using `chamge` and `AMQP` with its `edge_id` identifier. At this point it is able to receive commands from others devices to handle streaming. Using `gaeugli` it configures the streaming parameters and sends it to the requested URI.
 
