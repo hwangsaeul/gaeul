@@ -1,59 +1,84 @@
-Gaeul
------
-
+# Gaeul
 *개울*은 드론 프로젝트에서 사용하기 위한 드론용 어플리케이션 입니다.
+*Gaeul* is streaming server for Edge devices based on SRT protocol
 
-## Getting started
+## Overview
+Gaeul Agent is the streaming server of the project. It uses
+* [chamge]([https://github.com/hwangsaeul/chamge) to register to the network and receive messages
 
-### Install meson and ninja
+* [gaeugli](https://github.com/hwangsaeul/gaeguli) to handle the SRT streaming
 
-Meson 0.40 and newer is required.
+At start, `Gaeul Agent` registers itself in the network using `chamge` and `AMQP` with its `edge_id` identifier. At this point it is able to receive commands from others devices to handle streaming. Using `gaeugli` it configures the streaming parameters and sends it to the requested URI.
 
-### Build Gaeul
+## Settings
+Schema: org.hwangsaeul.Gaeul
 
-You can get library and executables built runnning:
-
-```
-meson build
-ninja -C build
-```
-
-### Run
-
-#### Install
-
-```
-ninja -C build install
+```console
+$ gsettings list-recursively org.hwangsaeul.Gaeul
+org.hwangsaeul.Gaeul default-srt-target-uri 'srt://127.0.0.1:8888?mode=listener'
+org.hwangsaeul.Gaeul edge-id '63f88d8379243eb5f6e0efc22f3f0edf6dabbb630656532aac8e06d7bcab764e'
+org.hwangsaeul.Gaeul video-device '/dev/video0'
+org.hwangsaeul.Gaeul video-source 'v4l2src'
+org.hwangsaeul.Gaeul encoding-method 'general'
 ```
 
-#### Compile gschema
+*   **default-srt-target-uri**: URI to use when starting streaming when it is no specified
+*   **edge-id**: Unique Edge device identifier, this id is auto generated.
+*   **video-device**: Video device used as source
+*   **video-source**: Valid gstreamer video source type
+*   **encoding-method**: Encoding method [general|nvidia-tx1]
 
-```
-glib-compile-schemas /usr/local/share/glib-2.0/schemas/
-```
-#### Run
+## Chamge API
+### streamingStart
+Starts the streaming of the Edge device.
 
-```
+*Arguments*
+*   url: URI to send streaming to
+*   resolution: Streaming resolution
+*   fps: Streaming FPS
+*   bitrates: Streaming bitrate
+
+### streamingStop
+Stops the streaming of the Edge device.
+
+### streamingChangeParameters
+Change the streaming parameters.
+
+*Arguments*
+*   resolution: Streaming resolution
+*   fps: Streaming FPS
+*   bitrates: Streaming bitrate
+
+## D-BUS API
+### State
+Retrieves the agent state, possible values are:
+* 0x0 = PAUSED
+* 0x1 = PLAYING
+* 0x2 = RECORDING
+
+### GetEdgeId
+Retrieves the edge\_id of the device
+
+*Return*
+*   edge\_id (s): Unique indentifier of the Edge device.
+
+## Build from sources
+To build the from sources follow the procedure described in
+
+[Build from sources](https://github.com/hwangsaeul/hwangsaeul.github.io/blob/master/build_from_sources.md)
+
+## Run
+After building from sources Gaeul Agent can be run with
+
+```console
 /usr/local/bin/gaeul-agent
 ```
 
-### Configurations
+## PPA nightly builds
 
-#### Get 
+Experimental versions of Gaeul are daily generated in [launchpad](https://launchpad.net/~hwangsaeul/+archive/ubuntu/nightly).
 
-```
-$ gsettings get org.hwangsaeul.Gaeul edge-id
-'randomized-string'
-$ gsettings get org.hwangsaeul.Gaeul video-source
-'v4l2src'
-$ gsettings get org.hwangsaeul.Gaeul video-device
-'/dev/video0'
-$ gsettings get org.hwangsaeul.Gaeul encoding-method
-'general'
-```
-
-#### Set 
-
-```
-$ gsettings set org.hwangsaeul.Gaeul encoding-method nvidia-tx1
-```
+```console
+$ sudo add-apt-repository ppa:hwangsaeul/nightly
+$ sudo apt-get update
+$ sudo apt-get install gaeul
