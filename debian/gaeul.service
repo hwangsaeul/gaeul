@@ -4,6 +4,7 @@ Description=Media streamer of Hwansaeul
 [Service]
 Type=simple
 Environment=GSETTINGS_BACKEND=keyfile
+User=hwangsaeul-gaeul
 ExecStart=/usr/bin/gaeul-agent
 Restart=on-failure
 
