@@ -19,5 +19,10 @@ endif
 override_dh_auto_install:
 	DESTDIR=${CURDIR}/debian/tmp ninja -C debian/build install
 
+override_dh_installudev:
+	# Run our udev rules after 73-seat-late.rules since 'uaccess' clears all
+	# ACLs previously set on a devnode. 
+	dh_installudev --priority=74
+
 override_dh_auto_clean:
 	rm -rf debian/build

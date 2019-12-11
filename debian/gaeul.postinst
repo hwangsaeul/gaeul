@@ -5,4 +5,10 @@ set -e
 adduser --quiet --system --group --home /var/lib/hwangsaeul/gaeul \
     --gecos "Hwangsaeul streaming daemon" hwangsaeul-gaeul
 
+if ! which udevadm >/dev/null 2>&1 ; then
+  return 0;
+fi
+udevadm control --reload-rules || true
+udevadm trigger --subsystem-match=video4linux --action=change || true
+
 #DEBHELPER#
