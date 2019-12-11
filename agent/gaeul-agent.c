@@ -87,9 +87,9 @@ G_DEFINE_TYPE (GaeulAgent, gaeul_agent, HWANGSAEUL_TYPE_APPLICATION)
 #define DBUS_STATE_PLAYING      1
 #define DBUS_STATE_RECORDING    2
 
-#define DEFAULT_RESOLUTION GAEGULI_VIDEO_RESOLUTION_1280X720
-#define DEFAULT_FPS 30
-#define DEFAULT_BITRATES 20000000
+#define DEFAULT_RESOLUTION GAEGULI_VIDEO_RESOLUTION_640X480
+#define DEFAULT_FPS 15
+#define DEFAULT_BITRATES 2000000
 
 static gboolean gaeul_agent_handle_get_edge_id (GaeulDBusManager * manager,
     GDBusMethodInvocation * invocation, gpointer user_data);
