@@ -507,8 +507,8 @@ out:
 }
 
 static gboolean
-gaeul_agent_dbus_register (GApplication *application,
-    GDBusConnection * connection, const gchar * name, GError **error)
+gaeul_agent_dbus_register (GApplication * application,
+    GDBusConnection * connection, const gchar * name, GError ** error)
 {
   GaeulAgent *self = GAEUL_AGENT (application);
 
@@ -670,7 +670,7 @@ stream_stopped_cb (GaeguliPipeline * pipeline, guint target_id,
 }
 
 static void
-gaeul_agent_activate (GApplication *app)
+gaeul_agent_activate (GApplication * app)
 {
   GaeulAgent *self = GAEUL_AGENT (app);
 
@@ -812,8 +812,7 @@ main (int argc, char **argv)
   g_autoptr (GError) error = NULL;
 
   app = G_APPLICATION (g_object_new (GAEUL_TYPE_AGENT,
-      "application-id", GAEUL_SCHEMA_ID,
-      NULL));
+          "application-id", GAEUL_SCHEMA_ID, NULL));
 
   g_unix_signal_add (SIGINT, (GSourceFunc) intr_handler, app);
 
