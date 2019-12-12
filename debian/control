@@ -21,6 +21,6 @@ Vcs-Git: https://github.com/hwangsaeul/gaeul.git
 
 Package: gaeul
 Architecture: any
-Depends: adduser, ${shlibs:Depends}, ${misc:Depends}
+Depends: acl, adduser, ${shlibs:Depends}, ${misc:Depends}
 Description: A Reference Application for SRT Edge
  Gaeul is a reference application that runs on edge to stream via SRT.
