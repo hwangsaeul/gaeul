@@ -28,7 +28,7 @@ org.hwangsaeul.Gaeul encoding-method 'general'
 *   **encoding-method**: Encoding method [general|nvidia-tx1]
 
 ## Chamge API
-### streamingStart
+**streamingStart**
 Starts the streaming of the Edge device.
 
 *Arguments*
@@ -37,10 +37,10 @@ Starts the streaming of the Edge device.
 *   fps: Streaming FPS
 *   bitrates: Streaming bitrate
 
-### streamingStop
+**streamingStop**
 Stops the streaming of the Edge device.
 
-### streamingChangeParameters
+**streamingChangeParameters**
 Change the streaming parameters.
 
 *Arguments*
@@ -49,13 +49,13 @@ Change the streaming parameters.
 *   bitrates: Streaming bitrate
 
 ## D-BUS API
-### State
+**State**
 Retrieves the agent state, possible values are:
 * 0x0 = PAUSED
 * 0x1 = PLAYING
 * 0x2 = RECORDING
 
-### GetEdgeId
+**GetEdgeId**
 Retrieves the edge\_id of the device
 
 *Return*
