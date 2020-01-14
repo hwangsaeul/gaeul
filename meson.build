@@ -1,5 +1,5 @@
 project('gaeul', 'c',
-  version: '0.9.0',
+  version: '0.10.0',
   license: 'Apache-2.0',
   meson_version: '>= 0.40',
   default_options: [ 'warning_level=1',
@@ -47,7 +47,7 @@ gobject_dep = dependency('gobject-2.0', version: glib_req_version,
 
 json_glib_dep = dependency ('json-glib-1.0', version: '>= 1.1.2')
 
-hwangsaeul_req_version = '>= 0.9.0'
+hwangsaeul_req_version = '>= 0.10.0'
 
 gaeguli_dep = dependency('gaeguli-1.0', version: hwangsaeul_req_version,
     fallback: ['gaeguli', 'libgaeguli_dep'])
