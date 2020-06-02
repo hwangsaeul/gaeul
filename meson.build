@@ -63,7 +63,7 @@ gaeul_c_args = [
   '-DG_LOG_DOMAIN="GAEUL2"',
 ]
 
-subdir('dbus')
+#subdir('dbus')
 subdir('agent')
 
 if meson.version().version_compare('>= 0.46.0')
