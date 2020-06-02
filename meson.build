@@ -28,7 +28,6 @@ cdata.set_quoted('PACKAGE', meson.project_name())
 cdata.set_quoted('VERSION', meson.project_version())
 
 # TODO: Check host_system
-cdata.set('_MUJACHI_EXTERN', '__attribute__((visibility("default"))) extern')
 cdata.set('LIBDIR', join_paths(get_option('prefix'), get_option('libdir')))
 
 configure_file(output : 'config.h', configuration : cdata)
