@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<schemalist>
+  <schema id="org.hwangsaeul.Gaeul2" path="/org/hwangsaeul/Gaeul2/">
+    <key name="id" type="s">
+      <default>"randomized-string"</default>
+    </key>
+    <key name="platform" type="s">
+      <choices>
+        <choice value="nvidia"/>
+        <choice value="intel"/>
+      </choices>
+      <default>"nvidia"</default>
+    </key>
+    <key name="video-sources" type="a(sss)">
+      <default>[("v4l2src", "/dev/video1", "")]</default>
+    </key>
+  </schema>
+</schemalist>
