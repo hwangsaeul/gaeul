@@ -1,3 +1,10 @@
+gaeul (0.11.0-0h8l0) UNRELEASED; urgency=medium
+
+  * Bump up version
+  * Break ABI compatiblity
+
+ -- Jeongseok Kim <jeongseok.kim@sk.com>  Tue, 02 Jun 2020 17:09:07 +0900
+
 gaeul (0.10.0-0h8l0) unstable; urgency=medium
 
   * Initial release.
