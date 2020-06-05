@@ -35,6 +35,15 @@ int     gaeul_application_run       (GaeulApplication      *self,
                                      int                    argc,
                                      char                 **argv);
 
+void            gaeul_application_set_id    (GaeulApplication      *self,
+                                             const gchar           *id);
+
+const gchar    *gaeul_application_get_id    (GaeulApplication      *self);
+
+void            gaeul_application_set_config_path
+                                            (GaeulApplication      *self,
+                                             GaeulApplication      *config_path);
+
 G_END_DECLS
 
 #endif // __GAEUL_APPLICATION_H__
