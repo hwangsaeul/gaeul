@@ -1,40 +1,18 @@
-source_h = [
+agents = [
+  [ 'SA', 'source-agent'],
 ]
 
-source_c = [
-  'gaeul2-agent.c',
-]
+foreach agent: agents
+  exe_name = 'gaeul@0@-@1@'.format(abiversion, agent[1])
+  src_file = 'gaeul@0@-@1@.c'.format(abiversion, agent[1])
+  log_c_arg = '-DG_LOG_DOMAIN="@0@"'.format(agent[0])
 
-gaeul_agent_c_args = [
-  '-DG_LOG_DOMAIN="GAEUL2-AGENT"',
-]
-
-schema_xmls = [
-  'org.hwangsaeul.Gaeul2.gschema.xml',
-]
-
-schema = gnome.compile_schemas (
-  depend_files: files(schema_xmls),
-)
-
-gio_schemasdir = dependency('gio-2.0').get_pkgconfig_variable(
-  'schemasdir',
-  define_variable: [ 'datadir', join_paths(get_option('prefix'), get_option('datadir')) ],
-  default: join_paths(get_option('prefix'), get_option('datadir'), 'glib-2.0/schemas'),
-)
-
-foreach xml: schema_xmls
-  install_data(
-    xml,
-    install_dir: gio_schemasdir,
+  executable (exe_name,
+    src_file,
+    install: true,
+    include_directories: gaeul_incs,
+    dependencies: [ libgaeul_dep ],
+    c_args: [ log_c_arg ]
   )
+    
 endforeach
-
-gaeul_agent = executable (
-  'gaeul2-agent',
-  sources: [ source_c, schema ],
-  include_directories: gaeul_incs,
-  c_args: gaeul_agent_c_args,
-  dependencies: [ gobject_dep, gaeguli_dep, json_glib_dep ],
-  install: true
-)

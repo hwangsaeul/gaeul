@@ -11,8 +11,9 @@ project_version_major = version_arr[0].to_int()
 project_version_minor = version_arr[1].to_int()
 project_version_micro = version_arr[2].to_int()
 
-apiversion = '2.0'
+abiversion = 2
 soversion = 0
+apiversion = '@0@.@1@'.format(abiversion, soversion)
 curversion = project_version_minor * 100 + project_version_micro
 libversion = '@0@.@1@.0'.format(soversion, curversion)
 gaeul_api_name = '@0@-@1@'.format(meson.project_name(), apiversion)
@@ -53,15 +54,11 @@ gaeguli_dep = dependency('gaeguli-1.0', version: hwangsaeul_req_version,
 
 gnome = import('gnome')
 
-gaeul_incs = include_directories('.', 'dbus')
+gaeul_incs = include_directories('.', 'gaeul')
 
 common_ldflags = [ ]
 
-gaeul_c_args = [
-  '-DG_LOG_DOMAIN="GAEUL2"',
-]
-
-#subdir('dbus')
+subdir('gaeul')
 subdir('agent')
 
 if meson.version().version_compare('>= 0.46.0')

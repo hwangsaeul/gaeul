@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <schemalist>
-  <schema id="org.hwangsaeul.Gaeul2" path="/org/hwangsaeul/Gaeul2/">
+  <schema id="org.hwangsaeul.Gaeul2.Source" path="/org/hwangsaeul/Gaeul2/Source/">
     <key name="id" type="s">
       <default>"randomized-string"</default>
     </key>
