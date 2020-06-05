@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<schemalist>
+  <schema id="org.hwangsaeul.Gaeul2.Relay" path="/org/hwangsaeul/Gaeul2/Relay/">
+    <key name="id" type="s">
+      <default>"randomized-string"</default>
+    </key>
+    <key name="sink-port" type="u">
+      <default>8888</default>
+      <summary>SRT binding port to be a sink</summary>
+      <description>SRT listening port to accept streaming source</description>
+    </key>
+    <key name="source-port" type="u">
+      <default>9999</default>
+      <summary>SRT binding port to be a source</summary>
+      <description>SRT listening port to acquire stream</description>
+    </key>
+    <key name="external-ip" type="s">
+      <default>""</default>
+      <summary>Relay external IP</summary>
+      <description>
+        When set, the relay will use this IP address in its source and sink
+        URIs. Otherwise, the first available non-loopback IP is used.
+      </description>
+    </key>
+  </schema>
+</schemalist>
