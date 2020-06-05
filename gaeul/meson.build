@@ -1,9 +1,11 @@
 source_h = [
   'application.h',
+  'source-application.h',
 ]
 
 source_c = [
   'application.c',
+  'source-application.c',
 ]
 
 gsettings_schemas = [

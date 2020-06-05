@@ -16,12 +16,17 @@
  *
  */
 
-#include "config.h"
+#ifndef __GAEUL_SOURCE_APPLICATION_H__
+#define __GAEUL_SOURCE_APPLICATION_H__
 
-#include "gaeul/source-application.h"
+#include "application.h"
 
-int
-main (int argc, char **argv)
-{
-  return 0;
-}
+G_BEGIN_DECLS
+
+#define GAEUL_TYPE_SOURCE_APPLICATION       (gaeul_source_application_get_type())
+G_DECLARE_FINAL_TYPE                        (GaeulSourceApplication, gaeul_source_application, GAEUL, SOURCE_APPLICATION, GaeulApplication)
+
+G_END_DECLS
+
+#endif // __GAEUL_SOURCE_APPLICATION_H__
+
