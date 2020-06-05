@@ -1,9 +1,11 @@
 source_h = [
+  'gaeul.h',
   'application.h',
   'source-application.h',
 ]
 
 source_c = [
+  'gaeul.c',
   'application.c',
   'source-application.c',
 ]

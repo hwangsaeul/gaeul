@@ -23,11 +23,14 @@
 #include <gio/gsettingsbackend.h>
 
 GSettings *
-gaeul_gsettings_new (const gchar * schema_id)
+gaeul_gsettings_new (const gchar * schema_id, const gchar * path)
 {
   g_autoptr (GSettingsBackend) backend = NULL;
 
-  backend = g_keyfile_settings_backend_new ("/etc/hwangsaeul.conf", "/", NULL);
+  g_return_val_if_fail (schema_id != NULL, NULL);
+  g_return_val_if_fail (path != NULL, NULL);
+
+  backend = g_keyfile_settings_backend_new (path, "/", NULL);
 
   return g_settings_new_with_backend (schema_id, backend);
 }

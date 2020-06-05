@@ -24,7 +24,8 @@
 
 G_BEGIN_DECLS
 
-GSettings      *gaeul_gsettings_new         (const gchar * schema_id);
+GSettings      *gaeul_gsettings_new         (const gchar * schema_id,
+                                             const gchar * path);
 
 G_END_DECLS
 
