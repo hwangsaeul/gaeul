@@ -1,5 +1,5 @@
 agents = [
-  [ 'SA', 'source-agent'],
+  [ 'GAEUL2-SA', 'source-agent'],
 ]
 
 foreach agent: agents
