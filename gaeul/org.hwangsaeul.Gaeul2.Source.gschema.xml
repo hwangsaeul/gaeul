@@ -11,8 +11,27 @@
       </choices>
       <default>"nvidia"</default>
     </key>
-    <key name="video-sources" type="a(sss)">
-      <default>[("v4l2src", "/dev/video1", "")]</default>
+    <key name="tmpdir" type="s">
+      <default>"/tmp/gaeul2"</default>
+    </key>
+    <key name="source-conf-dir" type="s">
+      <default>"."</default>
     </key>
   </schema>
+
+  <schema id="org.hwangsaeul.Gaeul2.Source.Node" path="/org/hwangsaeul/Gaeul2/Source/Node/">
+    <key name="name" type="s">
+      <default>""</default>
+    </key>
+    <key name="source" type="s">
+      <default>""</default>
+    </key>
+    <key name="device" type="s">
+      <default>""</default>
+    </key>
+    <key name="target-uri" type="s">
+      <default>""</default>
+    </key>
+  </schema>
+
 </schemalist>
