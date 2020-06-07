@@ -18,6 +18,7 @@
 
 #include "config.h"
 
+#include "gaeul.h"
 #include "source-application.h"
 
 /* *INDENT-OFF* */
@@ -38,11 +39,29 @@ G_DEFINE_TYPE (GaeulSourceApplication, gaeul_source_application, GAEUL_TYPE_APPL
 /* *INDENT-ON* */
 
 static void
+gaeul_source_application_startup (GApplication * app)
+{
+  GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (app);
+
+  g_debug ("startup");
+
+  self->settings = gaeul_gsettings_new (GAEUL_SOURCE_APPLICATION_SCHEMA_ID,
+      gaeul_application_get_config_path (GAEUL_APPLICATION (self))
+      );
+
+  // TBD
+
+  G_APPLICATION_CLASS (gaeul_source_application_parent_class)->startup (app);
+}
+
+static void
 gaeul_source_application_activate (GApplication * app)
 {
   g_debug ("activate");
 
   // TBD
+
+  G_APPLICATION_CLASS (gaeul_source_application_parent_class)->activate (app);
 }
 
 static void
@@ -60,6 +79,8 @@ gaeul_source_application_dispose (GObject * object)
 {
   GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (object);
 
+  g_clear_object (&self->settings);
+
   G_OBJECT_CLASS (gaeul_source_application_parent_class)->dispose (object);
 }
 
@@ -71,6 +92,7 @@ gaeul_source_application_class_init (GaeulSourceApplicationClass * klass)
 
   object_class->dispose = gaeul_source_application_dispose;
 
+  app_class->startup = gaeul_source_application_startup;
   app_class->activate = gaeul_source_application_activate;
   app_class->shutdown = gaeul_source_application_shutdown;
 }

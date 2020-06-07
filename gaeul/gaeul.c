@@ -32,5 +32,6 @@ gaeul_gsettings_new (const gchar * schema_id, const gchar * path)
 
   backend = g_keyfile_settings_backend_new (path, "/", NULL);
 
+  /* TODO: Do not crash if schema doesn't exist. */
   return g_settings_new_with_backend (schema_id, backend);
 }

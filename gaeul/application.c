@@ -20,7 +20,7 @@
 
 typedef enum
 {
-  PROP_ID = 1,
+  PROP_UID = 1,
   PROP_CONFIG_PATH,
 
   /*< private > */
@@ -34,7 +34,7 @@ typedef struct
 {
   gint exit_status;
 
-  gchar *id;
+  gchar *uid;
   gchar *config_path;
 
 } GaeulApplicationPrivate;
@@ -111,8 +111,11 @@ gaeul_application_get_property (GObject * object,
   GaeulApplicationPrivate *priv = gaeul_application_get_instance_private (self);
 
   switch (prop_id) {
-    case PROP_ID:
-      g_value_set_string (value, priv->id);
+    case PROP_UID:
+      g_value_set_string (value, priv->uid);
+      break;
+    case PROP_CONFIG_PATH:
+      g_value_set_string (value, priv->config_path);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -128,9 +131,9 @@ gaeul_application_set_property (GObject * object,
   GaeulApplicationPrivate *priv = gaeul_application_get_instance_private (self);
 
   switch (prop_id) {
-    case PROP_ID:
-      g_free (priv->id);
-      priv->id = g_value_dup_string (value);
+    case PROP_UID:
+      g_free (priv->uid);
+      priv->uid = g_value_dup_string (value);
       break;
     case PROP_CONFIG_PATH:
       g_free (priv->config_path);
@@ -143,6 +146,18 @@ gaeul_application_set_property (GObject * object,
 }
 
 static void
+gaeul_application_dispose (GObject * object)
+{
+  GaeulApplication *self = GAEUL_APPLICATION (object);
+  GaeulApplicationPrivate *priv = gaeul_application_get_instance_private (self);
+
+  g_clear_pointer (&priv->uid, g_free);
+  g_clear_pointer (&priv->config_path, g_free);
+
+  G_OBJECT_CLASS (gaeul_application_parent_class)->dispose (object);
+}
+
+static void
 gaeul_application_class_init (GaeulApplicationClass * klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
@@ -151,14 +166,15 @@ gaeul_application_class_init (GaeulApplicationClass * klass)
 
   object_class->get_property = gaeul_application_get_property;
   object_class->set_property = gaeul_application_set_property;
+  object_class->dispose = gaeul_application_dispose;
 
-  properties[PROP_ID] =
-      g_param_spec_string ("id", "id", "id", NULL,
+  properties[PROP_UID] =
+      g_param_spec_string ("uid", "uid", "uid", NULL,
       G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
 
   properties[PROP_CONFIG_PATH] =
       g_param_spec_string ("config-path", "config-path", "config-path", NULL,
-      G_PARAM_WRITABLE | G_PARAM_STATIC_STRINGS);
+      G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
 
   g_object_class_install_properties (object_class, G_N_ELEMENTS (properties),
       properties);
@@ -187,7 +203,7 @@ gaeul_application_get_id (GaeulApplication * self)
 
   g_return_val_if_fail (GAEUL_IS_APPLICATION (self), NULL);
 
-  return priv->id;
+  return priv->uid;
 }
 
 void gaeul_application_set_config_path
@@ -198,4 +214,14 @@ void gaeul_application_set_config_path
   g_return_if_fail (config_path != NULL);
 
   g_object_set (self, "config-path", config_path, NULL);
+}
+
+const gchar *
+gaeul_application_get_config_path (GaeulApplication * self)
+{
+  GaeulApplicationPrivate *priv = gaeul_application_get_instance_private (self);
+
+  g_return_val_if_fail (GAEUL_IS_APPLICATION (self), NULL);
+
+  return priv->config_path;
 }

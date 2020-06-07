@@ -44,6 +44,9 @@ void            gaeul_application_set_config_path
                                             (GaeulApplication      *self,
                                              GaeulApplication      *config_path);
 
+const gchar    *gaeul_application_get_config_path
+                                            (GaeulApplication      *self);
+
 G_END_DECLS
 
 #endif // __GAEUL_APPLICATION_H__

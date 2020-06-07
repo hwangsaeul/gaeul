@@ -26,6 +26,8 @@ G_BEGIN_DECLS
 #define GAEUL_TYPE_SOURCE_APPLICATION       (gaeul_source_application_get_type())
 G_DECLARE_FINAL_TYPE                        (GaeulSourceApplication, gaeul_source_application, GAEUL, SOURCE_APPLICATION, GaeulApplication)
 
+#define GAEUL_SOURCE_APPLICATION_SCHEMA_ID      "org.hwangsaeul.Gaeul2.Source"
+
 G_END_DECLS
 
 #endif // __GAEUL_SOURCE_APPLICATION_H__
