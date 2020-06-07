@@ -27,6 +27,10 @@ G_BEGIN_DECLS
 GSettings      *gaeul_gsettings_new         (const gchar * schema_id,
                                              const gchar * path);
 
+void            gaeul_parse_srt_uri         (const gchar       *url,
+                                             gchar            **host,
+                                             guint             *port,
+                                             gchar            **mode);
 G_END_DECLS
 
 #endif // __GAEUL_H__

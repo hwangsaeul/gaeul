@@ -35,3 +35,85 @@ gaeul_gsettings_new (const gchar * schema_id, const gchar * path)
   /* TODO: Do not crash if schema doesn't exist. */
   return g_settings_new_with_backend (schema_id, backend);
 }
+
+static char
+_search_delimiter (const char *from, guint * position)
+{
+  *position = 0;
+
+  for (;;) {
+    char ch = *from++;
+    (*position)++;
+
+    switch (ch) {
+      case ':':
+      case 0:
+      case '/':
+      case '?':
+      case '#':
+      case '=':
+        return ch;
+      default:
+        break;
+    }
+  }
+}
+
+void
+gaeul_parse_srt_uri (const gchar * uri, gchar ** host, guint * port,
+    gchar ** mode)
+{
+  gchar delimiter = 0;
+  g_autofree gchar *port_str = NULL;
+  guint position = 0;
+
+  g_return_if_fail (uri != NULL);
+  g_return_if_fail (host != NULL);
+  g_return_if_fail (port != NULL);
+  g_return_if_fail (mode != NULL);
+  g_return_if_fail (strncmp (uri, "srt://", 6) == 0);
+
+  if (!strncmp (uri, "srt://", 6)) {
+    uri += 6;
+  }
+
+  delimiter = _search_delimiter (uri, &position);
+  *host = g_strndup (uri, position - 1);
+
+  if (delimiter == ':') {
+    uri += position;
+    delimiter = _search_delimiter (uri, &position);
+    port_str = g_strndup (uri, position - 1);
+  }
+
+  if (port_str) {
+    gchar *end = NULL;
+    *port = strtol (port_str, &end, 10);
+
+    if (port_str == end || *end != 0 || *port < 0 || *port > 65535) {
+      return;
+    }
+  }
+
+  if (delimiter == '?' && mode != NULL) {
+    uri += position;
+    delimiter = _search_delimiter (uri, &position);
+
+    if (delimiter != '=') {
+      return;
+    }
+
+    *mode = g_strndup (uri, position - 1);
+    if (!g_strcmp0 (*mode, "mode")) {
+      uri += position;
+      delimiter = _search_delimiter (uri, &position);
+      if (position > 1) {
+        g_free (*mode);
+        *mode = g_strndup (uri, position - 1);
+      }
+    } else {
+      g_free (*mode);
+      *mode = NULL;
+    }
+  }
+}
