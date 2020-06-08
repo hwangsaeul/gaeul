@@ -22,6 +22,12 @@
 #define G_SETTINGS_ENABLE_BACKEND
 #include <gio/gsettingsbackend.h>
 
+/* *INDENT-OFF* */
+#if !GLIB_CHECK_VERSION(2,57,1)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(GEnumClass, g_type_class_unref)
+#endif
+/* *INDENT-ON* */
+
 GSettings *
 gaeul_gsettings_new (const gchar * schema_id, const gchar * path)
 {
@@ -61,17 +67,17 @@ _search_delimiter (const char *from, guint * position)
 
 gboolean
 gaeul_parse_srt_uri (const gchar * uri, gchar ** host, guint * port,
-    gchar ** mode)
+    GaeguliSRTMode * mode)
 {
   gboolean ret = FALSE;
   gchar delimiter = 0;
   g_autofree gchar *port_str = NULL;
+  g_autofree gchar *mode_str = NULL;
   guint position = 0;
 
   g_return_val_if_fail (uri != NULL, FALSE);
   g_return_val_if_fail (host != NULL, FALSE);
   g_return_val_if_fail (port != NULL, FALSE);
-  g_return_val_if_fail (mode != NULL, FALSE);
   g_return_val_if_fail (strncmp (uri, "srt://", 6) == 0, FALSE);
 
   if (!strncmp (uri, "srt://", 6)) {
@@ -96,7 +102,7 @@ gaeul_parse_srt_uri (const gchar * uri, gchar ** host, guint * port,
     }
   }
 
-  if (delimiter == '?' && mode != NULL) {
+  if (delimiter == '?') {
     uri += position;
     delimiter = _search_delimiter (uri, &position);
 
@@ -104,17 +110,20 @@ gaeul_parse_srt_uri (const gchar * uri, gchar ** host, guint * port,
       goto out;
     }
 
-    *mode = g_strndup (uri, position - 1);
-    if (!g_strcmp0 (*mode, "mode")) {
+    mode_str = g_strndup (uri, position - 1);
+    if (!g_strcmp0 (mode_str, "mode")) {
       uri += position;
       delimiter = _search_delimiter (uri, &position);
       if (position > 1) {
-        g_free (*mode);
-        *mode = g_strndup (uri, position - 1);
+
+        g_autoptr (GEnumClass) c = g_type_class_ref (GAEGULI_TYPE_SRT_MODE);
+        GEnumValue *v = NULL;
+
+        mode_str = g_strndup (uri, position - 1);
+
+        v = g_enum_get_value_by_nick (c, mode_str);
+        *mode = v->value;
       }
-    } else {
-      g_free (*mode);
-      *mode = NULL;
     }
     ret = TRUE;
   } else if (delimiter == 0) {

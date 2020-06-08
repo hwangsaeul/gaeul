@@ -37,6 +37,7 @@ typedef struct _GaeguliNest
   GaeguliFifoTransmit *transmit;
 
   guint transmit_id;
+  guint target_stream_id;
 } GaeguliNest;
 
 static GaeguliNest *
@@ -64,14 +65,36 @@ gaeguli_nest_ref (GaeguliNest * nest)
 }
 
 static void
-gaeguli_nest_start (GaeguliNest * nest, GaeguliVideoCodec codec,
-    GaeguliVideoResolution resolution, guint fps, guint bitrates)
+gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
+    const gchar * host, guint port, GaeguliSRTMode mode,
+    GaeguliVideoCodec codec, GaeguliVideoResolution resolution, guint fps,
+    guint bitrates)
 {
+  g_autoptr (GError) error = NULL;
+  const gchar *fifo = NULL;
+
+  g_return_if_fail (nest->transmit_id == 0);
+  g_return_if_fail (nest->target_stream_id == 0);
+
+  nest->transmit_id =
+      gaeguli_fifo_transmit_start_full (nest->transmit, host, port, mode,
+      stream_id, &error);
+
   if (nest->transmit_id == 0) {
-    const gchar *fifo = gaeguli_fifo_transmit_get_fifo (nest->transmit);
-    nest->transmit_id =
-        gaeguli_pipeline_add_fifo_target_full (nest->pipeline, codec,
-        resolution, fps, bitrates, fifo, NULL);
+    g_debug ("Failed to start Fifo trasmitter (reason: %s)", error->message);
+    return;
+  }
+
+  fifo = gaeguli_fifo_transmit_get_fifo (nest->transmit);
+
+  nest->target_stream_id =
+      gaeguli_pipeline_add_fifo_target_full (nest->pipeline, codec, resolution,
+      fps, bitrates, fifo, &error);
+
+  if (nest->target_stream_id == 0) {
+    g_debug ("Failed to add pipeline to fifo transmitter  (reason: %s)",
+        error->message);
+    return;
   }
 }
 
@@ -79,7 +102,6 @@ static void
 gaeguli_nest_stop (GaeguliNest * nest)
 {
   if (nest->transmit_id > 0) {
-    gaeguli_pipeline_remove_target (nest->pipeline, nest->transmit_id, NULL);
     gaeguli_fifo_transmit_stop (nest->transmit, nest->transmit_id, NULL);
     nest->transmit_id = 0;
   }
@@ -139,7 +161,7 @@ gaeul_source_application_startup (GApplication * app)
   const gchar *source_conf_file = NULL;
   g_autoptr (GDir) confd = NULL;
   g_autoptr (GError) error = NULL;
-  g_autoptr (GaeguliFifoTransmit) transmit = NULL;
+  g_autofree gchar *uid = NULL;
 
   g_debug ("startup");
 
@@ -152,23 +174,25 @@ gaeul_source_application_startup (GApplication * app)
   g_settings_bind (self->settings, "tmpdir", self, "tmpdir",
       G_SETTINGS_BIND_DEFAULT);
 
+  g_object_get (GAEUL_APPLICATION (self), "uid", &uid, NULL);
+
   source_conf_dir = g_settings_get_string (self->settings, "source-conf-dir");
   confd = g_dir_open (source_conf_dir, 0, &error);
-
-  transmit = gaeguli_fifo_transmit_new_full (self->tmpdir);
 
   while ((source_conf_file = g_dir_read_name (confd)) != NULL) {
 
     g_autoptr (GaeguliNest) nest = NULL;
     g_autoptr (GaeguliPipeline) pipeline = NULL;
-
+    g_autoptr (GaeguliFifoTransmit) transmit = NULL;
 
     g_autofree gchar *name = NULL;
     g_autofree gchar *device = NULL;
 
     g_autofree gchar *target_uri = NULL;
     g_autofree gchar *target_host = NULL;
-    g_autofree gchar *target_mode = NULL;
+    GaeguliSRTMode target_mode = GAEGULI_SRT_MODE_UNKNOWN;
+
+    g_autofree gchar *stream_id = NULL;
     guint target_port = 0;
 
     g_autofree gchar *sconf_path =
@@ -186,7 +210,8 @@ gaeul_source_application_startup (GApplication * app)
       continue;
     }
 
-
+    stream_id = g_strconcat (uid, "/", name, NULL);
+    transmit = gaeguli_fifo_transmit_new_full (self->tmpdir);
 
     /* TODO: do not hard code parameters */
     pipeline =
@@ -195,8 +220,9 @@ gaeul_source_application_startup (GApplication * app)
 
     nest = gaeguli_nest_new (pipeline, transmit);
 
-    gaeguli_nest_start (nest, GAEGULI_VIDEO_CODEC_H264,
-        GAEGULI_VIDEO_RESOLUTION_640X480, 15, 2000000);
+    gaeguli_nest_start (nest, stream_id, target_host, target_port, target_mode,
+        GAEGULI_VIDEO_CODEC_H264, GAEGULI_VIDEO_RESOLUTION_640X480, 15,
+        2000000);
     self->gaegulis = g_list_prepend (self->gaegulis, gaeguli_nest_ref (nest));
   }
 

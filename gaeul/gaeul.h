@@ -21,6 +21,7 @@
 #define __GAEUL_H__
 
 #include <gio/gio.h>
+#include <gaeguli/gaeguli.h>
 
 G_BEGIN_DECLS
 
@@ -30,7 +31,7 @@ GSettings      *gaeul_gsettings_new         (const gchar * schema_id,
 gboolean        gaeul_parse_srt_uri         (const gchar       *url,
                                              gchar            **host,
                                              guint             *port,
-                                             gchar            **mode);
+                                             GaeguliSRTMode    *mode);
 G_END_DECLS
 
 #endif // __GAEUL_H__
