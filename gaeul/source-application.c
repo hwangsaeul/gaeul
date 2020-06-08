@@ -162,6 +162,7 @@ gaeul_source_application_startup (GApplication * app)
   g_autoptr (GDir) confd = NULL;
   g_autoptr (GError) error = NULL;
   g_autofree gchar *uid = NULL;
+  GaeguliEncodingMethod encoding_method;
 
   g_debug ("startup");
 
@@ -175,6 +176,7 @@ gaeul_source_application_startup (GApplication * app)
       G_SETTINGS_BIND_DEFAULT);
 
   g_object_get (GAEUL_APPLICATION (self), "uid", &uid, NULL);
+  encoding_method = (0x7fff & g_settings_get_enum (self->settings, "platform"));
 
   source_conf_dir = g_settings_get_string (self->settings, "source-conf-dir");
   confd = g_dir_open (source_conf_dir, 0, &error);
@@ -191,9 +193,9 @@ gaeul_source_application_startup (GApplication * app)
     g_autofree gchar *target_uri = NULL;
     g_autofree gchar *target_host = NULL;
     GaeguliSRTMode target_mode = GAEGULI_SRT_MODE_UNKNOWN;
+    guint target_port = 0;
 
     g_autofree gchar *stream_id = NULL;
-    guint target_port = 0;
 
     g_autofree gchar *sconf_path =
         g_build_filename (source_conf_dir, source_conf_file, NULL);
@@ -201,28 +203,38 @@ gaeul_source_application_startup (GApplication * app)
         gaeul_gsettings_new (GAEUL_SOURCE_APPLICATION_SCHEMA_ID ".Node",
         sconf_path);
 
+    GaeguliVideoSource video_source = g_settings_get_enum (ssettings, "source");
+    GaeguliVideoCodec video_codec = g_settings_get_enum (ssettings, "codec");
+    GaeguliVideoResolution video_resolution =
+        g_settings_get_enum (ssettings, "resolution");
+    guint bitrate = g_settings_get_uint (ssettings, "bitrate");
+    guint fps = g_settings_get_uint (ssettings, "fps");
+
     name = g_settings_get_string (ssettings, "name");
     device = g_settings_get_string (ssettings, "device");
     target_uri = g_settings_get_string (ssettings, "target-uri");
 
+    if (!name) {
+      g_info ("config file[%s] doesn't have valid name property", sconf_path);
+      continue;
+    }
+
     if (!gaeul_parse_srt_uri (target_uri, &target_host, &target_port,
             &target_mode)) {
+      g_info ("can't parse srt target uri from config file[%s]", sconf_path);
       continue;
     }
 
     stream_id = g_strconcat (uid, "_", name, NULL);
     transmit = gaeguli_fifo_transmit_new_full (self->tmpdir, stream_id);
 
-    /* TODO: do not hard code parameters */
     pipeline =
-        gaeguli_pipeline_new_full (GAEGULI_VIDEO_SOURCE_VIDEOTESTSRC, device,
-        GAEGULI_ENCODING_METHOD_GENERAL);
+        gaeguli_pipeline_new_full (video_source, device, encoding_method);
 
     nest = gaeguli_nest_new (pipeline, transmit);
 
     gaeguli_nest_start (nest, stream_id, target_host, target_port, target_mode,
-        GAEGULI_VIDEO_CODEC_H264, GAEGULI_VIDEO_RESOLUTION_640X480, 15,
-        2000000);
+        video_codec, video_resolution, fps, bitrate);
     self->gaegulis = g_list_prepend (self->gaegulis, gaeguli_nest_ref (nest));
   }
 

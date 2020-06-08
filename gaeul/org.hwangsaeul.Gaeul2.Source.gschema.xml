@@ -1,15 +1,18 @@
 <?xml version="1.0"?>
 <schemalist>
+
+  <enum id="org.hwangsaeul.Gaeguli.EncodingMethod">
+    <value nick="general" value="0x0001"/>
+    <value nick="nvidia" value="0x0002"/>
+    <value nick="intel" value="0x8001"/>
+  </enum>
+
   <schema id="org.hwangsaeul.Gaeul2.Source" path="/org/hwangsaeul/Gaeul2/Source/">
     <key name="uid" type="s">
       <default>"randomized-string"</default>
     </key>
-    <key name="platform" type="s">
-      <choices>
-        <choice value="nvidia"/>
-        <choice value="intel"/>
-      </choices>
-      <default>"nvidia"</default>
+    <key name="platform" enum="org.hwangsaeul.Gaeguli.EncodingMethod">
+      <default>"intel"</default>
     </key>
     <key name="tmpdir" type="s">
       <default>"/tmp/gaeul2"</default>
@@ -19,15 +22,47 @@
     </key>
   </schema>
 
+  <enum id="org.hwangsaeul.Gaeguli.VideoResolution">
+    <value nick="640x480" value="1"/>
+    <value nick="1280x720" value="2"/>
+    <value nick="1920x1080" value="3"/>
+    <value nick="3840x2160" value="4"/>
+  </enum>
+
+  <enum id="org.hwangsaeul.Gaeguli.VideoCodec">
+    <value nick="h264" value="1"/>
+    <value nick="h265" value="2"/>
+  </enum>
+
+  <enum id="org.hwangsaeul.Gaeguli.VideoSource">
+    <value nick="v4l2src" value="1"/>
+    <value nick="avfvideosrc" value="2"/>
+    <value nick="videotestsrc" value="3"/>
+  </enum>
+
   <schema id="org.hwangsaeul.Gaeul2.Source.Node" path="/org/hwangsaeul/Gaeul2/Source/Node/">
     <key name="name" type="s">
       <default>""</default>
     </key>
-    <key name="source" type="s">
-      <default>""</default>
+    <key name="source" enum="org.hwangsaeul.Gaeguli.VideoSource">
+      <default>"v4l2src"</default>
     </key>
     <key name="device" type="s">
       <default>""</default>
+    </key>
+    <key name="bitrate" type="u">
+      <range min="500000" max="40000000"/>
+      <default>2000000</default>
+    </key>
+    <key name="fps" type="u">
+      <range min="1" max="120"/>
+      <default>15</default>
+    </key>
+    <key name="codec" enum="org.hwangsaeul.Gaeguli.VideoCodec">
+      <default>"h264"</default>
+    </key>
+    <key name="resolution" enum="org.hwangsaeul.Gaeguli.VideoResolution">
+      <default>"640x480"</default>
     </key>
     <key name="target-uri" type="s">
       <default>""</default>
