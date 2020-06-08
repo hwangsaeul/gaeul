@@ -210,8 +210,8 @@ gaeul_source_application_startup (GApplication * app)
       continue;
     }
 
-    stream_id = g_strconcat (uid, "/", name, NULL);
-    transmit = gaeguli_fifo_transmit_new_full (self->tmpdir);
+    stream_id = g_strconcat (uid, "_", name, NULL);
+    transmit = gaeguli_fifo_transmit_new_full (self->tmpdir, stream_id);
 
     /* TODO: do not hard code parameters */
     pipeline =
