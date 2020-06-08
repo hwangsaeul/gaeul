@@ -80,6 +80,7 @@ gaeguli_nest_stop (GaeguliNest * nest)
 {
   if (nest->transmit_id > 0) {
     gaeguli_pipeline_remove_target (nest->pipeline, nest->transmit_id, NULL);
+    gaeguli_fifo_transmit_stop (nest->transmit, nest->transmit_id, NULL);
     nest->transmit_id = 0;
   }
 }
@@ -180,7 +181,12 @@ gaeul_source_application_startup (GApplication * app)
     device = g_settings_get_string (ssettings, "device");
     target_uri = g_settings_get_string (ssettings, "target-uri");
 
-    gaeul_parse_srt_uri (target_uri, &target_host, &target_port, &target_mode);
+    if (!gaeul_parse_srt_uri (target_uri, &target_host, &target_port,
+            &target_mode)) {
+      continue;
+    }
+
+
 
     /* TODO: do not hard code parameters */
     pipeline =

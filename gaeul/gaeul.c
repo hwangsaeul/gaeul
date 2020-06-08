@@ -59,19 +59,20 @@ _search_delimiter (const char *from, guint * position)
   }
 }
 
-void
+gboolean
 gaeul_parse_srt_uri (const gchar * uri, gchar ** host, guint * port,
     gchar ** mode)
 {
+  gboolean ret = FALSE;
   gchar delimiter = 0;
   g_autofree gchar *port_str = NULL;
   guint position = 0;
 
-  g_return_if_fail (uri != NULL);
-  g_return_if_fail (host != NULL);
-  g_return_if_fail (port != NULL);
-  g_return_if_fail (mode != NULL);
-  g_return_if_fail (strncmp (uri, "srt://", 6) == 0);
+  g_return_val_if_fail (uri != NULL, FALSE);
+  g_return_val_if_fail (host != NULL, FALSE);
+  g_return_val_if_fail (port != NULL, FALSE);
+  g_return_val_if_fail (mode != NULL, FALSE);
+  g_return_val_if_fail (strncmp (uri, "srt://", 6) == 0, FALSE);
 
   if (!strncmp (uri, "srt://", 6)) {
     uri += 6;
@@ -91,7 +92,7 @@ gaeul_parse_srt_uri (const gchar * uri, gchar ** host, guint * port,
     *port = strtol (port_str, &end, 10);
 
     if (port_str == end || *end != 0 || *port < 0 || *port > 65535) {
-      return;
+      goto out;
     }
   }
 
@@ -100,7 +101,7 @@ gaeul_parse_srt_uri (const gchar * uri, gchar ** host, guint * port,
     delimiter = _search_delimiter (uri, &position);
 
     if (delimiter != '=') {
-      return;
+      goto out;
     }
 
     *mode = g_strndup (uri, position - 1);
@@ -115,5 +116,11 @@ gaeul_parse_srt_uri (const gchar * uri, gchar ** host, guint * port,
       g_free (*mode);
       *mode = NULL;
     }
+    ret = TRUE;
+  } else if (delimiter == 0) {
+    ret = TRUE;
   }
+
+out:
+  return ret;
 }
