@@ -53,6 +53,11 @@ gaeul_application_run (GaeulApplication * self, int argc, char **argv)
   return (ret == 0) ? priv->exit_status : ret;
 }
 
+#if 0
+
+/** FIXME: When trying to acquire system bus on nvidia,
+  * it is always failed. This should be fixed later */
+
 static void
 _dbus_name_acquired (GDBusConnection * connection, const gchar * name,
     gpointer user_data)
@@ -92,15 +97,19 @@ _dbus_name_lost (GDBusConnection * connection, const gchar * name,
   g_application_quit (G_APPLICATION (self));
 }
 
+#endif
+
 static void
 gaeul_application_startup (GApplication * app)
 {
   G_APPLICATION_CLASS (gaeul_application_parent_class)->startup (app);
 
+#if 0
   if (getppid () == 1) {
     g_bus_own_name (G_BUS_TYPE_SYSTEM, g_application_get_application_id (app),
         0, NULL, _dbus_name_acquired, _dbus_name_lost, app, NULL);
   }
+#endif
 }
 
 static void
