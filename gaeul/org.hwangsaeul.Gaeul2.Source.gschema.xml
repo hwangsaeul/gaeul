@@ -38,6 +38,7 @@
     <value nick="v4l2src" value="1"/>
     <value nick="avfvideosrc" value="2"/>
     <value nick="videotestsrc" value="3"/>
+    <value nick="nvarguscamerasrc" value="4"/>
   </enum>
 
   <schema id="org.hwangsaeul.Gaeul2.Source.Node" path="/org/hwangsaeul/Gaeul2/Source/Node/">
