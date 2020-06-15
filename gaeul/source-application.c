@@ -23,6 +23,12 @@
 
 #include <gaeguli/gaeguli.h>
 
+#include <glib.h>
+#include <glib/gstdio.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 /* *INDENT-OFF* */
 #if !GLIB_CHECK_VERSION(2,57,1)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(GEnumClass, g_type_class_unref)
@@ -154,6 +160,24 @@ G_DEFINE_TYPE (GaeulSourceApplication, gaeul_source_application, GAEUL_TYPE_APPL
 /* *INDENT-ON* */
 
 static void
+_delete_tmpdir (const gchar * tmpdir)
+{
+  const gchar *f = NULL;
+  g_autoptr (GDir) tmpd = NULL;
+
+  tmpd = g_dir_open (tmpdir, 0, NULL);
+
+  g_debug ("delete tmpdir(%s)", tmpdir);
+
+  while ((f = g_dir_read_name (tmpd)) != NULL) {
+    g_autofree gchar *fname = g_build_filename (tmpdir, f, NULL);
+    if (g_remove (fname) != 0) {
+      g_error ("failed to remove %s", fname);
+    }
+  }
+}
+
+static void
 gaeul_source_application_startup (GApplication * app)
 {
   GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (app);
@@ -174,6 +198,11 @@ gaeul_source_application_startup (GApplication * app)
   g_settings_bind (self->settings, "uid", self, "uid", G_SETTINGS_BIND_DEFAULT);
   g_settings_bind (self->settings, "tmpdir", self, "tmpdir",
       G_SETTINGS_BIND_DEFAULT);
+
+  if (g_settings_get_boolean (self->settings, "autoclean")) {
+    g_autofree gchar *tmpdir = g_settings_get_string (self->settings, "tmpdir");
+    _delete_tmpdir (tmpdir);
+  }
 
   g_object_get (GAEUL_APPLICATION (self), "uid", &uid, NULL);
   encoding_method = (0x7fff & g_settings_get_enum (self->settings, "platform"));

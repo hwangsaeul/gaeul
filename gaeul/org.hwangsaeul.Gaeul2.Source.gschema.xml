@@ -17,6 +17,9 @@
     <key name="tmpdir" type="s">
       <default>"/tmp/gaeul2"</default>
     </key>
+    <key name="autoclean" type="b">
+      <default>true</default>
+    </key>
     <key name="source-conf-dir" type="s">
       <default>"."</default>
     </key>
