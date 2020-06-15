@@ -3,9 +3,9 @@ Description=Media streamer of Hwansaeul
 
 [Service]
 Type=simple
-Environment=GSETTINGS_BACKEND=keyfile
-User=hwangsaeul-gaeul
-ExecStart=/usr/bin/gaeul-agent
+Environment=GST_DEBUG=3
+User=gaeul
+ExecStart=/usr/bin/gaeul2-source-agent -c /etc/gaeul2/gaeul2.ini
 Restart=on-failure
 
 [Install]

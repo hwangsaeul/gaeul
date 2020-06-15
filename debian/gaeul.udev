@@ -1,1 +1,0 @@
-SUBSYSTEM=="video4linux", RUN+="/usr/bin/setfacl -m u:hwangsaeul-gaeul:rw- $devnode"

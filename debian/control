@@ -6,10 +6,8 @@ Build-Depends: debhelper (>= 10~),
   pkg-config,
   libglib2.0-dev,
   libjson-glib-dev,
-  libchamge-dev,
   libgaeguli-dev,
   libssl-dev,
-  librabbitmq-dev,
   libsrt-dev,
   libgstreamer1.0-dev,
   libgstreamer-plugins-bad1.0-dev  
@@ -19,8 +17,18 @@ Homepage: https://github.com/hwangsaeul/gaeul
 Vcs-Browser: https://github.com/hwangsaeul/gaeul
 Vcs-Git: https://github.com/hwangsaeul/gaeul.git
 
-Package: gaeul
+Package: libgaeul2
 Architecture: any
-Depends: acl, adduser, ${shlibs:Depends}, ${misc:Depends}
+Depends:
+  gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-plugins-ugly,
+  ${shlibs:Depends}, ${misc:Depends}
+Description:  SRT Streaming Application library
+ Gaeul is a reference application that handles SRT stream.
+
+Package: gaeul2-source-agent
+Architecture: any
+Depends: libgaeul2 (= ${binary:Version}), acl, adduser,
+  ${shlibs:Depends}, ${misc:Depends}
 Description: A Reference Application for SRT Edge
- Gaeul is a reference application that runs on edge to stream via SRT.
+ Gaeul2 Source Agent is a reference application that runs on edge
+ to stream via SRT.
