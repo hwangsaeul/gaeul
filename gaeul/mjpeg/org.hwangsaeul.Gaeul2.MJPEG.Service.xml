@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd" name="/">
+  <interface name="org.hwangsaeul.Gaeul2.MJPEG.Service">
+
+    <!--
+      Start:
+      @uid: The stream authentication id
+      @rid: The request stream id
+      @width: The width of output video stream
+      @height: The height of output video stream
+      @fps: The framerate of output video stream
+      @latency: The desire latency in millisecond of SRT connection
+      @uri: The uri to serve mjpeg stream
+      @stream_hash: The hash to distinguish user requested stream
+   
+      Start transcoded stream.
+    -->
+    <method name="Start">
+      <arg name="uid" type="s" direction="in"/>
+      <arg name="rid" type="s" direction="in"/>
+      <arg name="width" type="u" direction="in"/>
+      <arg name="height" type="u" direction="in"/>
+      <arg name="fps" type="u" direction="in"/>
+      <arg name="latency" type="u" direction="in"/>
+      <arg name="uri" type="s" direction="out"/>
+      <arg name="stream_hash" type="u" direction="out"/>
+    </method>
+
+    <!--
+      Stop:
+      @uid: The stream authentication id
+      @rid: The request stream id
+      @stream_hash: The hash to distinguish user requested stream
+   
+      Stop transcoded stream.
+    -->
+    <method name="Stop">
+      <arg name="uid" type="s" direction="in"/>
+      <arg name="rid" type="s" direction="in"/>
+      <arg name="stream_hash" type="u" direction="in"/>
+    </method>
+
+  </interface>
+</node>

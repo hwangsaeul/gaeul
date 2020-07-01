@@ -23,13 +23,16 @@ install_data(gsettings_schemas,
 gaeul_schemas = gnome.compile_schemas(depend_files: gsettings_schemas)
 gaeul_schemas_dir = meson.current_build_dir()
 
+gstreamer_dep = dependency ('gstreamer-1.0', version: '>= 1.14.0')
+gstreamer_pbutils_dep = dependency ('gstreamer-pbutils-1.0')
+
 libgaeul = library(
   'gaeul-@0@'.format(apiversion),
   source_c, gaeul_schemas,
   version: libversion,
   soversion: soversion,
   include_directories: gaeul_incs,
-  dependencies: [ gio_dep, gaeguli_dep ],
+  dependencies: [ gio_dep, gaeguli_dep, gstreamer_dep, gstreamer_pbutils_dep ],
   c_args: [ '-DG_LOG_DOMAIN="GAEUL2"' ],
   link_args: common_ldflags,
   install: true
@@ -39,3 +42,5 @@ libgaeul_dep = declare_dependency(link_with: libgaeul,
   include_directories: [ gaeul_incs ],
   dependencies: [ gaeguli_dep ]
 )
+
+subdir('mjpeg')

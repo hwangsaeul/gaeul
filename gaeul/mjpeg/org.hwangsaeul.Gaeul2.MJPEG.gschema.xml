@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<schemalist>
+
+  <schema id="org.hwangsaeul.Gaeul2.MJPEG" path="/org/hwangsaeul/Gaeul2/MJPEG/">
+    <key name="uid" type="s">
+      <default>"randomized-string"</default>
+    </key>
+    <key name="bind-port" type="u">
+      <default>9222</default>
+    </key>
+    <key name="external-url" type="s">
+      <default>""</default>
+    </key>
+    <key name="relay-url" type="s">
+      <default>""</default>
+    </key>
+    <key name="limit-srt-connections" type="u">
+      <range min="1" max="256"/>
+      <default>4</default>
+    </key>
+    <key name="limit-user-sessions" type="u">
+      <range min="4" max="1024"/>
+      <default>16</default>
+    </key>
+    <key name="limit-sessions-per-user" type="u">
+      <range min="1" max="1024"/>
+      <default>16</default>
+    </key>
+  </schema>
+</schemalist>

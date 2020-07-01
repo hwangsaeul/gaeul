@@ -1,5 +1,6 @@
 agents = [
   [ 'GAEUL2-SA', 'source-agent'],
+  [ 'GAEUL2-MJ', 'mjpeg-agent'],
 ]
 
 foreach agent: agents
@@ -11,7 +12,7 @@ foreach agent: agents
     src_file,
     install: true,
     include_directories: gaeul_incs,
-    dependencies: [ libgaeul_dep ],
+    dependencies: [ libgaeul_mjpeg_dep, libgaeul_dep ],
     c_args: [ log_c_arg ]
   )
     
