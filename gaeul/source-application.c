@@ -107,6 +107,15 @@ gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
 static void
 gaeguli_nest_stop (GaeguliNest * nest)
 {
+  if (nest->target_stream_id > 0) {
+    g_autoptr (GError) error = NULL;
+    gaeguli_pipeline_remove_target (nest->pipeline, nest->target_stream_id,
+        &error);
+    nest->target_stream_id = 0;
+  }
+
+  gaeguli_pipeline_stop (nest->pipeline);
+
   if (nest->transmit_id > 0) {
     gaeguli_fifo_transmit_stop (nest->transmit, nest->transmit_id, NULL);
     nest->transmit_id = 0;
