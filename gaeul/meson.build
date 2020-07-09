@@ -18,12 +18,10 @@ gsettings_schemas = [
 install_data(gsettings_schemas,
   install_dir: join_paths(get_option('datadir'), 'glib-2.0', 'schemas'))
 
-gaeul_schemas = gnome.compile_schemas(depend_files: gsettings_schemas)
-gaeul_schemas_dir = meson.current_build_dir()
 
 libgaeul = library(
   'gaeul-@0@'.format(apiversion),
-  source_c, gaeul_schemas,
+  source_c,
   version: libversion,
   soversion: soversion,
   include_directories: gaeul_incs,
@@ -37,3 +35,7 @@ libgaeul_dep = declare_dependency(link_with: libgaeul,
   include_directories: [ gaeul_incs ],
   dependencies: [ gaeguli_dep ]
 )
+
+# Used only in the test suite
+gaeul_schemas = gnome.compile_schemas(depend_files: gsettings_schemas)
+gaeul_schemas_dir = meson.current_build_dir()
