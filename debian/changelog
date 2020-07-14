@@ -1,10 +1,40 @@
-gaeul (0.11.0-3h8l0) UNRELEASED; urgency=medium
+gaeul (0.19.0-0h8l0) unstable; urgency=medium
 
+  [ Jeongseok Kim ]
   * Bump up version
   * Break ABI compatiblity
   * Introduce gaeul2-source-agent
+  * meson.build: remove useless definition
+  * Bump up ABI version to 2
+  * build: disable dbus
+  * remove chamge dependency
+  * move ci to github action
+  * agent: remove gaeul agent
+  * application: copied from chamge
+  * rename and move codes to support multiple agents
+  * copied Relay gsettings schema from hwangsae
+  * good bye old DBus APIs
+  * template: source-application and its agent
+  * common: copied common gsettings_new partially from hwangsae
+  * gaeul: add path argument to gsettings_new
+  * application: common properties (id and config-path)
+  * source: remove setter and getter
+  * source-agent: make it run and load config
+  * agent: rename log domain name
+  * gaeul: add srt uri parser
+  * source-agent: start supporting multiple cameras
+  * gaeul: srt_parse_uri returns parsing result
+  * source-application: start stream per source config
+  * source-application: set fifoname when starting stream
+  * settings: introduce Gaeguli enums to Gaeul
+  * settings: add nvarguscamerasrc to source type
+  * debian: ready for gaeul2-source-agent
+  * application: disable owning system bus
+  * source-application: add autoclean option
+  * source-application: stop pipeline first
+  * build gschema only for test suite
 
- -- Jeongseok Kim <jeongseok.kim@sk.com>  Tue, 02 Jun 2020 17:09:07 +0900
+ -- Jeongseok Kim <jeongseok.kim@sk.com>  Tue, 14 Jul 2020 13:24:25 +0900
 
 gaeul (0.10.0-0h8l0) unstable; urgency=medium
 
