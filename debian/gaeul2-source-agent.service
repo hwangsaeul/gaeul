@@ -7,6 +7,7 @@ Environment=GST_DEBUG=3
 User=gaeul
 ExecStart=/usr/bin/gaeul2-source-agent -c /etc/gaeul2/gaeul2.ini
 Restart=on-failure
+KillSignal=SIGINT
 
 [Install]
 WantedBy=multi-user.target
