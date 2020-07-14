@@ -1,5 +1,5 @@
 project('gaeul', 'c',
-  version: '0.19.0',
+  version: '0.19.1',
   license: 'Apache-2.0',
   meson_version: '>= 0.40',
   default_options: [ 'warning_level=1',

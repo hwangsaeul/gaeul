@@ -1,3 +1,9 @@
+gaeul (0.19.1-0h8l1) unstable; urgency=medium
+
+  * debian: add KillSignal
+
+ -- Justin Kim <jeongseok.kim@sk.com>  Tue, 14 Jul 2020 16:10:35 +0900
+
 gaeul (0.19.0-0h8l0) unstable; urgency=medium
 
   [ Jeongseok Kim ]
