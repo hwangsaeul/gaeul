@@ -32,6 +32,9 @@ gboolean        gaeul_parse_srt_uri         (const gchar       *url,
                                              gchar            **host,
                                              guint             *port,
                                              GaeguliSRTMode    *mode);
+
+gchar          *gaeul_get_local_ip          (void);
+
 G_END_DECLS
 
 #endif // __GAEUL_H__
