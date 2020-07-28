@@ -1,3 +1,9 @@
+gaeul (0.19.2-0h8l1) UNRELEASED; urgency=medium
+
+  * debian: add gaeguli dependency
+
+ -- J. Kim <jeongseok.kim@sk.com>  Tue, 28 Jul 2020 19:50:28 +0900
+
 gaeul (0.19.1-0h8l1) unstable; urgency=medium
 
   * debian: add KillSignal
