@@ -1,12 +1,14 @@
 source_h = [
   'gaeul.h',
   'application.h',
+  'tuple.h',
   'source-application.h',
 ]
 
 source_c = [
   'gaeul.c',
   'application.c',
+  'tuple.c',
   'source-application.c',
 ]
 

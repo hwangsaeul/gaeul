@@ -60,6 +60,7 @@ common_ldflags = [ ]
 
 subdir('gaeul')
 subdir('agent')
+subdir('tests')
 
 if meson.version().version_compare('>= 0.46.0')
   python3 = import('python').find_installation()
