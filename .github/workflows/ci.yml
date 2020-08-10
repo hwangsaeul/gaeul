@@ -27,6 +27,7 @@ jobs:
       - name: Install package dependencies
         run: |
           sudo apt-get install --assume-yes \
+                  libsoup2.4-dev \
                   libsrt-dev \
                   libjson-glib-dev \
                   libgstreamer-plugins-bad1.0-dev \
