@@ -118,3 +118,18 @@ gaeul_tuple_remove (GaeulTuple * self,
 
   return g_hash_table_remove (self->object_map, variant_key);
 }
+
+GObject *
+gaeul_tuple_lookup (GaeulTuple * self, const gchar * first_key,
+    const gchar * second_key)
+{
+  g_autoptr (GVariant) variant_key = NULL;
+
+  g_return_val_if_fail (GAEUL_IS_TUPLE (self), FALSE);
+  g_return_val_if_fail (first_key != NULL, FALSE);
+  g_return_val_if_fail (second_key != NULL, FALSE);
+
+  variant_key = g_variant_new ("(ss)", first_key, second_key);
+
+  return g_hash_table_lookup (self->object_map, variant_key);
+}

@@ -37,6 +37,9 @@ gboolean        gaeul_tuple_remove             (GaeulTuple         *self,
                                                 const gchar        *first_key,
                                                 const gchar        *second_key);
 
+GObject        *gaeul_tuple_lookup             (GaeulTuple         *self,
+                                                const gchar        *first_key,
+                                                const gchar        *second_key);
 G_END_DECLS
 
 #endif // __GAEUL_TUPLE_H__
