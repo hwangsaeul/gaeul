@@ -40,20 +40,16 @@ typedef struct _GaeguliNest
   gint refcount;
 
   GaeguliPipeline *pipeline;
-  GaeguliFifoTransmit *transmit;
-
-  guint transmit_id;
   guint target_stream_id;
 } GaeguliNest;
 
 static GaeguliNest *
-gaeguli_nest_new (GaeguliPipeline * pipeline, GaeguliFifoTransmit * transmit)
+gaeguli_nest_new (GaeguliPipeline * pipeline)
 {
   GaeguliNest *nest = g_new0 (GaeguliNest, 1);
 
   nest->refcount = 1;
   nest->pipeline = g_object_ref (pipeline);
-  nest->transmit = g_object_ref (transmit);
 
   return nest;
 }
@@ -63,7 +59,6 @@ gaeguli_nest_ref (GaeguliNest * nest)
 {
   g_return_val_if_fail (nest != NULL, NULL);
   g_return_val_if_fail (nest->pipeline != NULL, NULL);
-  g_return_val_if_fail (nest->transmit != NULL, NULL);
 
   g_atomic_int_inc (&nest->refcount);
 
@@ -72,33 +67,19 @@ gaeguli_nest_ref (GaeguliNest * nest)
 
 static void
 gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
-    const gchar * host, guint port, GaeguliSRTMode mode,
-    GaeguliVideoCodec codec, GaeguliVideoResolution resolution, guint fps,
-    guint bitrates)
+    const gchar * uri, GaeguliVideoCodec codec,
+    GaeguliVideoResolution resolution, guint fps, guint bitrates)
 {
   g_autoptr (GError) error = NULL;
-  const gchar *fifo = NULL;
 
-  g_return_if_fail (nest->transmit_id == 0);
   g_return_if_fail (nest->target_stream_id == 0);
 
-  nest->transmit_id =
-      gaeguli_fifo_transmit_start_full (nest->transmit, host, port, mode,
-      stream_id, &error);
-
-  if (nest->transmit_id == 0) {
-    g_debug ("Failed to start Fifo trasmitter (reason: %s)", error->message);
-    return;
-  }
-
-  fifo = gaeguli_fifo_transmit_get_fifo (nest->transmit);
-
   nest->target_stream_id =
-      gaeguli_pipeline_add_fifo_target_full (nest->pipeline, codec, resolution,
-      fps, bitrates, fifo, &error);
+      gaeguli_pipeline_add_srt_target_full (nest->pipeline, codec, resolution,
+      fps, bitrates, uri, stream_id, &error);
 
   if (nest->target_stream_id == 0) {
-    g_debug ("Failed to add pipeline to fifo transmitter  (reason: %s)",
+    g_debug ("Failed to add srt target to pipeline (reason: %s)",
         error->message);
     return;
   }
@@ -112,14 +93,13 @@ gaeguli_nest_stop (GaeguliNest * nest)
     gaeguli_pipeline_remove_target (nest->pipeline, nest->target_stream_id,
         &error);
     nest->target_stream_id = 0;
+
+    if (error != NULL) {
+      g_warning ("%s", error->message);
+    }
   }
 
   gaeguli_pipeline_stop (nest->pipeline);
-
-  if (nest->transmit_id > 0) {
-    gaeguli_fifo_transmit_stop (nest->transmit, nest->transmit_id, NULL);
-    nest->transmit_id = 0;
-  }
 }
 
 static void
@@ -127,14 +107,12 @@ gaeguli_nest_unref (GaeguliNest * nest)
 {
   g_return_if_fail (nest != NULL);
   g_return_if_fail (nest->pipeline != NULL);
-  g_return_if_fail (nest->transmit != NULL);
 
   if (g_atomic_int_dec_and_test (&nest->refcount)) {
 
     gaeguli_nest_stop (nest);
 
     g_clear_object (&nest->pipeline);
-    g_clear_object (&nest->transmit);
     g_free (nest);
   }
 }
@@ -223,7 +201,6 @@ gaeul_source_application_startup (GApplication * app)
 
     g_autoptr (GaeguliNest) nest = NULL;
     g_autoptr (GaeguliPipeline) pipeline = NULL;
-    g_autoptr (GaeguliFifoTransmit) transmit = NULL;
 
     g_autofree gchar *name = NULL;
     g_autofree gchar *device = NULL;
@@ -264,15 +241,14 @@ gaeul_source_application_startup (GApplication * app)
     }
 
     stream_id = g_strconcat (uid, "_", name, NULL);
-    transmit = gaeguli_fifo_transmit_new_full (self->tmpdir, stream_id);
 
     pipeline =
         gaeguli_pipeline_new_full (video_source, device, encoding_method);
 
-    nest = gaeguli_nest_new (pipeline, transmit);
+    nest = gaeguli_nest_new (pipeline);
 
-    gaeguli_nest_start (nest, stream_id, target_host, target_port, target_mode,
-        video_codec, video_resolution, fps, bitrate);
+    gaeguli_nest_start (nest, stream_id, target_uri, video_codec,
+        video_resolution, fps, bitrate);
     self->gaegulis = g_list_prepend (self->gaegulis, gaeguli_nest_ref (nest));
   }
 
