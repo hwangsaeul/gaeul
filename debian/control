@@ -1,34 +1,86 @@
 Source: gaeul
 Priority: optional
 Maintainer: Jeongseok Kim <jeongseok.kim@sk.com>
-Build-Depends: debhelper (>= 10~),
-  meson,
-  pkg-config,
-  libglib2.0-dev,
-  libjson-glib-dev,
-  libgaeguli-dev,
-  libssl-dev,
-  libsrt-dev,
-  libgstreamer1.0-dev,
-  libgstreamer-plugins-bad1.0-dev  
+Build-Depends:
+ debhelper (>= 10~),
+ libgaeguli-dev,
+ libglib2.0-dev,
+ libgstreamer-plugins-bad1.0-dev,
+ libgstreamer1.0-dev,
+ libsoup2.4-dev,
+ libsrt-dev,
+ libssl-dev,
+ meson,
+ pkg-config,
 Standards-Version: 4.2.1
 Section: libs
 Homepage: https://github.com/hwangsaeul/gaeul
 Vcs-Browser: https://github.com/hwangsaeul/gaeul
 Vcs-Git: https://github.com/hwangsaeul/gaeul.git
 
-Package: libgaeul2
+Package: gaeul2-agent
 Architecture: any
 Depends:
-  gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-plugins-ugly,
-  ${shlibs:Depends}, ${misc:Depends}
-Description:  SRT Streaming Application library
- Gaeul is a reference application that handles SRT stream.
+ acl,
+ adduser,
+ libgaeul2 (= ${binary:Version}),
+ ${misc:Depends},
+ ${shlibs:Depends},
+Description: A dummy agent package for Gaeul agents
+ Gaeul2 Agent is a fake package to manage pre and post script for
+ various agent applications.
+
+Package: gaeul2-mjpeg-agent
+Architecture: any
+Depends:
+ libgaeul2-mjpeg (= ${binary:Version}),
+ ${misc:Depends},
+ ${shlibs:Depends},
+Description: A Reference Application for Transcoding
+ Gaeul2 MJPEG Agent is a reference application that runs on server
+ to stream MJPEG over HTTP from MPEG-TS over SRT.
 
 Package: gaeul2-source-agent
 Architecture: any
-Depends: libgaeul2 (= ${binary:Version}), acl, adduser,
-  ${shlibs:Depends}, ${misc:Depends}
+Depends:
+ libgaeul2-source (= ${binary:Version}),
+ ${misc:Depends},
+ ${shlibs:Depends},
 Description: A Reference Application for SRT Edge
  Gaeul2 Source Agent is a reference application that runs on edge
  to stream via SRT.
+
+Package: libgaeul2
+Architecture: any
+Depends:
+ gstreamer1.0-plugins-bad,
+ gstreamer1.0-plugins-good,
+ gstreamer1.0-plugins-ugly,
+ ${misc:Depends},
+ ${shlibs:Depends},
+Description: SRT Streaming Application Core library
+ Gaeul is a reference application that handles SRT stream.
+
+Package: libgaeul2-mjpeg
+Architecture: any
+Depends:
+ gstreamer1.0-plugins-bad,
+ gstreamer1.0-plugins-good,
+ gstreamer1.0-plugins-ugly,
+ libgaeul2 (= ${binary:Version}),
+ ${misc:Depends},
+ ${shlibs:Depends},
+Description: SRT MJPEG Transcoding Application library
+ Gaeul is a reference application that handles SRT stream.
+
+Package: libgaeul2-source
+Architecture: any
+Depends:
+ gstreamer1.0-plugins-bad,
+ gstreamer1.0-plugins-good,
+ gstreamer1.0-plugins-ugly,
+ libgaeul2 (= ${binary:Version}),
+ ${misc:Depends},
+ ${shlibs:Depends},
+Description: SRT Streaming Application library
+ Gaeul is a reference application that handles SRT stream.

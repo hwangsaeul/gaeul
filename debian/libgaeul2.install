@@ -1,2 +1,1 @@
-usr/lib/*/libgaeul-*.so.*
-usr/share/glib-2.0/schemas/org.hwangsaeul.Gaeul2.Source*
+usr/lib/*/libgaeul-2.0.so*

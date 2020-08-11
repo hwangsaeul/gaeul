@@ -1,7 +1,7 @@
 gaeul (0.11.0-3h8l0) UNRELEASED; urgency=medium
 
   * Bump up version
-  * Break ABI compatiblity
+  * Break ABI compatibility
   * Introduce gaeul2-source-agent
 
  -- Jeongseok Kim <jeongseok.kim@sk.com>  Tue, 02 Jun 2020 17:09:07 +0900
