@@ -8,8 +8,6 @@ source_c = [
   'mjpeg-request.c',
 ]
 
-gaeul_fqdn_prefix = 'org.hwangsaeul.Gaeul2'
-
 # GSettings Schema
 mjpeg_setting = gaeul_fqdn_prefix + '.MJPEG.gschema.xml'
 

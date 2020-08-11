@@ -1,19 +1,18 @@
+gaeul_fqdn_prefix = 'org.hwangsaeul.Gaeul2'
+
 source_h = [
   'gaeul.h',
   'application.h',
   'tuple.h',
-  'source-application.h',
 ]
 
 source_c = [
   'gaeul.c',
   'application.c',
   'tuple.c',
-  'source-application.c',
 ]
 
 gsettings_schemas = [
-  'org.hwangsaeul.Gaeul2.Source.gschema.xml',
   'org.hwangsaeul.Gaeul2.Relay.gschema.xml',
 ]
 
@@ -44,3 +43,4 @@ libgaeul_dep = declare_dependency(link_with: libgaeul,
 )
 
 subdir('mjpeg')
+subdir('source')

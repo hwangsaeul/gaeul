@@ -22,7 +22,7 @@
 #include <glib-unix.h>
 
 #include "gaeul/application.h"
-#include "gaeul/source-application.h"
+#include "gaeul/source/source-application.h"
 
 static gboolean
 intr_handler (gpointer user_data)
