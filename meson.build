@@ -45,8 +45,6 @@ gio_dep = [dependency('gio-2.0', version: glib_req_version,
 gobject_dep = dependency('gobject-2.0', version: glib_req_version,
     fallback: ['glib', 'libgobject_dep'])
 
-json_glib_dep = dependency ('json-glib-1.0', version: '>= 1.1.2')
-
 soup_dep = dependency('libsoup-2.4')
 
 hwangsaeul_req_version = '>= 0.10.0'
