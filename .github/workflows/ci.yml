@@ -34,12 +34,10 @@ jobs:
                   libsrt-dev \
                   libjson-glib-dev \
                   libgstreamer-plugins-bad1.0-dev \
-                  libgaeguli-dev gaeguli-tools
+                  libgaeguli-dev gaeguli-tools \
+                  meson ninja-build
 
-      - uses: BSFishy/meson-build@v1.0.1
-        with:
-          action: build
-          directory: build
-          options: --verbose
-          meson-version: 0.54
-          ninja-version: 1.9.0
+      - name: Compile
+        run: |
+          meson build
+          ninja -C build 
