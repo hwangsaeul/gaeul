@@ -12,22 +12,12 @@ source_c = [
   'tuple.c',
 ]
 
-gsettings_schemas = [
-  'org.hwangsaeul.Gaeul2.Relay.gschema.xml',
-]
-
-install_data(gsettings_schemas,
-  install_dir: join_paths(get_option('datadir'), 'glib-2.0', 'schemas'))
-
-gaeul_schemas = gnome.compile_schemas(depend_files: gsettings_schemas)
-gaeul_schemas_dir = meson.current_build_dir()
-
 gstreamer_dep = dependency ('gstreamer-1.0', version: '>= 1.14.0')
 gstreamer_pbutils_dep = dependency ('gstreamer-pbutils-1.0')
 
 libgaeul = library(
   'gaeul-@0@'.format(apiversion),
-  source_c, gaeul_schemas,
+  source_c,
   version: libversion,
   soversion: soversion,
   include_directories: gaeul_incs,
@@ -44,3 +34,4 @@ libgaeul_dep = declare_dependency(link_with: libgaeul,
 
 subdir('mjpeg')
 subdir('source')
+subdir('relay')

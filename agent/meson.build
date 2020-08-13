@@ -1,6 +1,7 @@
 agents = [
   [ 'GAEUL2-SA', 'source-agent', [ libgaeul_source_dep ] ],
   [ 'GAEUL2-MJ', 'mjpeg-agent', [ libgaeul_mjpeg_dep ] ],
+  [ 'GAEUL2-RY', 'relay-agent', [ libgaeul_relay_dep ] ],
 ]
 
 foreach agent: agents
