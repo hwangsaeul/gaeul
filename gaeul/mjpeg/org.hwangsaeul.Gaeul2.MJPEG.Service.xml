@@ -12,7 +12,7 @@
       @fps: The framerate of output video stream
       @latency: The desire latency in millisecond of SRT connection
       @uri: The uri to serve mjpeg stream
-      @stream_hash: The hash to distinguish user requested stream
+      @request_id: The random string to distinguish user request
    
       Start transcoded stream.
     -->
@@ -24,21 +24,17 @@
       <arg name="fps" type="u" direction="in"/>
       <arg name="latency" type="u" direction="in"/>
       <arg name="uri" type="s" direction="out"/>
-      <arg name="stream_hash" type="u" direction="out"/>
+      <arg name="request_id" type="s" direction="out"/>
     </method>
 
     <!--
       Stop:
-      @uid: The stream authentication id
-      @rid: The request stream id
-      @stream_hash: The hash to distinguish user requested stream
+      @request_id: The random string to distinguish user request
    
       Stop transcoded stream.
     -->
     <method name="Stop">
-      <arg name="uid" type="s" direction="in"/>
-      <arg name="rid" type="s" direction="in"/>
-      <arg name="stream_hash" type="u" direction="in"/>
+      <arg name="request_id" type="s" direction="in"/>
     </method>
 
   </interface>

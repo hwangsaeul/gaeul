@@ -25,7 +25,9 @@
 
 #include "mjpeg/mjpeg-generated.h"
 
+#include <glib/gi18n.h>
 #include <gmodule.h>
+
 #include <gst/gst.h>
 #include <libsoup/soup.h>
 #include <libsoup/soup-server.h>
@@ -60,6 +62,7 @@ struct _GaeulMjpegApplication
 
   Gaeul2DBusMJPEGService *service;
 
+  GHashTable *request_ids;
   GHashTable *pipelines;
 
   GSettings *settings;
@@ -182,6 +185,7 @@ gaeul_mjpeg_application_dispose (GObject * object)
 
   g_clear_object (&self->settings);
   g_clear_pointer (&self->pipelines, g_hash_table_unref);
+  g_clear_pointer (&self->request_ids, g_hash_table_unref);
 
   soup_server_disconnect (self->soup_server);
   g_clear_object (&self->soup_server);
@@ -393,20 +397,15 @@ gaeul_mjpeg_application_class_init (GaeulMjpegApplicationClass * klass)
 
 static gchar *
 _build_return_url (const gchar * external_url, const gchar * local_ip,
-    guint port, GaeulMjpegRequest * request)
+    guint port, const gchar * request_id)
 {
   g_autofree gchar *url = NULL;
 
   /* Use external_url if given */
   if (g_str_has_prefix (external_url, "http")) {
-    url =
-        g_strdup_printf ("%s/mjpeg/%s/%s/%u", external_url, request->uid,
-        request->rid, gaeul_mjpeg_request_parameter_hash (request));
+    url = g_strdup_printf ("%s/mjpeg/%s", external_url, request_id);
   } else {
-    url =
-        g_strdup_printf ("http://%s:%u/mjpeg/%s/%s/%u", local_ip, port,
-        request->uid, request->rid,
-        gaeul_mjpeg_request_parameter_hash (request));
+    url = g_strdup_printf ("http://%s:%u/mjpeg/%s", local_ip, port, request_id);
   }
 
   return g_steal_pointer (&url);
@@ -422,25 +421,45 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
 
   g_autofree gchar *return_url = NULL;
   g_autofree gchar *path = NULL;
-  g_autoptr (GstElement) pipeline = NULL;
+  g_autofree gchar *request_id = NULL;
   g_autoptr (GaeulMjpegRequest) request = NULL;
-  guint stream_hash = 0;
 
-  g_debug ("start transcoder uid: %s rid: %s "
-      "  resolution: %" G_GUINT32_FORMAT "x%" G_GUINT32_FORMAT
-      "  fps: %" G_GUINT32_FORMAT " latency: %" G_GUINT32_FORMAT " ms.",
-      uid, rid, width, height, fps, latency);
+  GHashTableIter iter;
+  gpointer key, value;
+  gboolean found = FALSE;
 
   request = gaeul_mjpeg_request_new (uid, rid, 0, latency, width, height, fps);
-  stream_hash = gaeul_mjpeg_request_parameter_hash (request);
+
+  /* Every start request will have unique id. */
+  request_id = g_uuid_string_random ();
+
+  g_debug ("start transcoder (id: %s) uid: %s rid: %s "
+      "  resolution: %" G_GUINT32_FORMAT "x%" G_GUINT32_FORMAT
+      "  fps: %" G_GUINT32_FORMAT " latency: %" G_GUINT32_FORMAT " ms.",
+      request_id, uid, rid, width, height, fps, latency);
 
   return_url =
       _build_return_url (self->external_url, self->local_ip,
-      g_settings_get_uint (self->settings, "bind-port"), request);
+      g_settings_get_uint (self->settings, "bind-port"), request_id);
 
-  if ((pipeline = g_hash_table_lookup (self->pipelines, request)) == NULL) {
-    /* the first request */
+  /* Check if transcoding pipeline is running */
+  g_hash_table_iter_init (&iter, self->pipelines);
+  while (g_hash_table_iter_next (&iter, &key, &value)) {
+    GaeulMjpegRequest *r = key;
 
+    if (gaeul_mjpeg_request_equal (r, request)) {
+      request = gaeul_mjpeg_request_ref (r);
+      found = TRUE;
+      g_debug ("found existing mjpeg transcoder pipeline (id: %s)", request_id);
+      break;
+    }
+  }
+
+  if (!found) {
+
+    /* Transcoding pipeline must be created */
+
+    g_autoptr (GstElement) pipeline = NULL;
     g_autoptr (GError) error = NULL;
     g_autofree gchar *pipeline_desc =
         _build_srtsrc_pipeline_desc (self->relay_url, width, height, fps,
@@ -452,15 +471,16 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
       return TRUE;
     }
 
-    g_hash_table_insert (self->pipelines, g_steal_pointer (&request),
-        g_steal_pointer (&pipeline));
+    g_debug ("Created transcoding pipeline for (id: %s)", request_id);
 
-  } else {
-    /* TODO: perhaps, we might want to increase pipeline usage count */
+    g_hash_table_insert (self->pipelines, gaeul_mjpeg_request_ref (request),
+        gst_object_ref (pipeline));
   }
 
+  g_hash_table_insert (self->request_ids, g_strdup (request_id), request);
+
   gaeul2_dbus_mjpegservice_complete_start (object, invocation, return_url,
-      stream_hash);
+      request_id);
 
   return TRUE;
 }
@@ -468,26 +488,32 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
 static gboolean
 gaeul_mjpeg_application_handle_stop (Gaeul2DBusMJPEGService * object,
     GDBusMethodInvocation * invocation,
-    const gchar * uid, const gchar * rid, guint stream_hash, gpointer user_data)
+    const gchar * request_id, gpointer user_data)
 {
   GaeulMjpegApplication *self = GAEUL_MJPEG_APPLICATION (user_data);
-  GHashTableIter iter;
-  gpointer key, value;
+  GaeulMjpegRequest *r = NULL;
 
-  g_hash_table_iter_init (&iter, self->pipelines);
-  while (g_hash_table_iter_next (&iter, &key, &value)) {
-    GstElement *pipeline = value;
-    GaeulMjpegRequest *r = key;
-
-    if ((g_strcmp0 (r->uid, uid) == 0) && (g_strcmp0 (r->rid, rid) == 0) &&
-        (gaeul_mjpeg_request_parameter_hash (r) == stream_hash)) {
-      /* Found it */
-
-      gst_element_set_state (pipeline, GST_STATE_NULL);
-
-      g_hash_table_iter_remove (&iter);
-    }
+  if ((r = g_hash_table_lookup (self->request_ids, request_id)) == NULL) {
+    g_info ("Stop operation is requested (id: %s), but not existed",
+        request_id);
+    return TRUE;
   }
+
+  g_info ("r->refcount: %u", r->refcount);
+
+  /* FIXME: It's not a good idea to access refcount directly */
+  if (r->refcount > 1) {
+    gaeul_mjpeg_request_unref (r);
+    g_info ("after unref r->refcount: %u", r->refcount);
+  } else {
+    GstElement *pipeline = g_hash_table_lookup (self->pipelines, r);
+    if (pipeline != NULL) {
+      gst_element_set_state (pipeline, GST_STATE_NULL);
+    }
+    g_hash_table_remove (self->pipelines, r);
+  }
+
+  g_hash_table_remove (self->request_ids, request_id);
 
   gaeul2_dbus_mjpegservice_complete_stop (object, invocation);
 
@@ -500,6 +526,9 @@ gaeul_mjpeg_application_init (GaeulMjpegApplication * self)
   gst_init (NULL, NULL);
 
   self->soup_server = soup_server_new (NULL, NULL);
+
+  self->request_ids =
+      g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
   self->pipelines =
       g_hash_table_new_full ((GHashFunc) gaeul_mjpeg_request_hash,
