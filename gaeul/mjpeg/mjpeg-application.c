@@ -103,27 +103,6 @@ gaeul_mjpeg_http_message_wrote_headers_cb (SoupMessage * msg,
   gst_element_set_state (pipeline, GST_STATE_PLAYING);
 }
 
-static gboolean
-_find_pipeline (gpointer key, gpointer value, gpointer user_data)
-{
-  GaeulMjpegRequest *r = key;
-  gchar *uid, *rid;
-  guint stream_hash;
-  GVariant *v = user_data;
-  gboolean ret = FALSE;
-
-  g_variant_get (v, "(ssu)", &uid, &rid, &stream_hash);
-  g_debug ("uid: [%s], rid: [%s], hash: [%u]", uid, rid, stream_hash);
-
-  ret = (g_strcmp0 (r->uid, uid) == 0) && (g_strcmp0 (r->rid, rid) == 0);
-
-  if (ret) {
-    ret = gaeul_mjpeg_request_parameter_hash (r) == stream_hash;
-  }
-
-  return ret;
-}
-
 static void
 gaeul_mjpeg_http_request_cb (SoupServer * server, SoupMessage * msg,
     const char *path, GHashTable * query, SoupClientContext * client_ctx,
@@ -137,24 +116,31 @@ gaeul_mjpeg_http_request_cb (SoupServer * server, SoupMessage * msg,
   g_autofree gchar *uid = NULL;
   g_autofree gchar *rid = NULL;
   g_autoptr (GError) error = NULL;
-  g_auto (GStrv) tmp_strv = NULL;
-  guint stream_hash = 0;
   g_autoptr (GVariant) lookup_data = NULL;
+
+  g_autofree gchar *request_id = NULL;
+  GaeulMjpegRequest *r = NULL;
 
   if (!g_str_has_prefix (path, "/mjpeg/")) {
     soup_message_set_status (msg, SOUP_STATUS_NOT_FOUND);
     return;
   }
 
-  tmp_strv = g_strsplit (path + 7, "/", 3);
-  stream_hash = (guint) g_ascii_strtoll (tmp_strv[2], NULL, 10);
-  lookup_data = g_variant_new ("(ssu)", tmp_strv[0], tmp_strv[1], stream_hash);
+  /* Assuming that the rest string of url excluded "/mjpeg/" is "request_id". */
+  request_id = g_strdup (path + 7);
 
-  /* look up id */
-  pipeline = g_hash_table_find (self->pipelines, _find_pipeline, lookup_data);
+  g_debug ("requested transcoding stream (id: %s)", request_id);
+
+  if ((r = g_hash_table_lookup (self->request_ids, request_id)) == NULL) {
+    g_info ("invalid request (id: %s)", request_id);
+    soup_message_set_status (msg, SOUP_STATUS_NOT_FOUND);
+    return;
+  }
+
+  pipeline = g_hash_table_lookup (self->pipelines, r);
 
   if (pipeline == NULL) {
-    g_info ("no proper pipeline was found. (%s)", path);
+    g_info ("no proper pipeline is found (id: %s)", request_id);
     soup_message_set_status (msg, SOUP_STATUS_NOT_FOUND);
     return;
   }
@@ -172,7 +158,7 @@ gaeul_mjpeg_http_request_cb (SoupServer * server, SoupMessage * msg,
       soup_client_context_get_gsocket (client_ctx));
 
   src = gst_bin_get_by_name (GST_BIN (pipeline), "src");
-  g_object_set (src, "streamid", tmp_strv[0], NULL);
+  g_object_set (src, "streamid", r->uid, NULL);
 
   g_signal_connect (G_OBJECT (msg), "wrote-headers",
       G_CALLBACK (gaeul_mjpeg_http_message_wrote_headers_cb), pipeline);
