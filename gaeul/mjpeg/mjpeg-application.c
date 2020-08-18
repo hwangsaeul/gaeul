@@ -51,7 +51,7 @@ static GParamSpec *properties[PROP_LAST] = { NULL };
     "srtsrc name=src uri=\"%s\" ! queue ! tsdemux latency=%d ! decodebin ! " \
     "videoconvert ! videoscale ! videorate ! " \
     "video/x-raw, framerate=%d/1, width=%d, height=%d ! "\
-    "jpegenc ! multipartmux boundary=endofsection ! multisocketsink name=msocksink"
+    "jpegenc ! multipartmux boundary=endofsection ! multisocketsink name=msocksink sync=false"
 /* *INDENT-ON* */
 
 struct _GaeulMjpegApplication
