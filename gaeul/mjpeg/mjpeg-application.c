@@ -100,7 +100,9 @@ gaeul_mjpeg_http_message_wrote_headers_cb (SoupMessage * msg,
 
   g_debug ("wrote_headers");
 
-  gst_element_set_state (pipeline, GST_STATE_PLAYING);
+  if (GST_STATE (pipeline) != GST_STATE_PLAYING) {
+    gst_element_set_state (pipeline, GST_STATE_PLAYING);
+  }
 }
 
 static void
@@ -153,12 +155,8 @@ gaeul_mjpeg_http_request_cb (SoupServer * server, SoupMessage * msg,
 
   sink = gst_bin_get_by_name (GST_BIN (pipeline), "msocksink");
 
-  gst_element_set_state (pipeline, GST_STATE_READY);
   g_signal_emit_by_name (sink, "add",
       soup_client_context_get_gsocket (client_ctx));
-
-  src = gst_bin_get_by_name (GST_BIN (pipeline), "src");
-  g_object_set (src, "streamid", r->uid, NULL);
 
   g_signal_connect (G_OBJECT (msg), "wrote-headers",
       G_CALLBACK (gaeul_mjpeg_http_message_wrote_headers_cb), pipeline);
@@ -446,6 +444,7 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
     /* Transcoding pipeline must be created */
 
     g_autoptr (GstElement) pipeline = NULL;
+    g_autoptr (GstElement) src = NULL;
     g_autoptr (GError) error = NULL;
     g_autofree gchar *pipeline_desc =
         _build_srtsrc_pipeline_desc (self->relay_url, width, height, fps,
@@ -457,7 +456,12 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
       return TRUE;
     }
 
+    src = gst_bin_get_by_name (GST_BIN (pipeline), "src");
+    g_object_set (src, "streamid", uid, NULL);
+
     g_debug ("Created transcoding pipeline for (id: %s)", request_id);
+
+    gst_element_set_state (pipeline, GST_STATE_READY);
 
     g_hash_table_insert (self->pipelines, gaeul_mjpeg_request_ref (request),
         gst_object_ref (pipeline));
