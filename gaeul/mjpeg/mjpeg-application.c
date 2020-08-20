@@ -48,7 +48,7 @@ static GParamSpec *properties[PROP_LAST] = { NULL };
 
 /* *INDENT-OFF* */
 #define GST_SRTSRC_PIPELINE_DESC \
-    "srtsrc name=src uri=\"%s\" ! queue ! tsdemux latency=%d ! decodebin ! " \
+    "srtsrc name=src uri=\"%s\" ! queue ! tsdemux latency=%d ! h264parse ! decodebin ! " \
     "videoconvert ! videoscale ! videorate ! " \
     "video/x-raw, framerate=%d/1, width=%d, height=%d ! "\
     "jpegenc ! multipartmux boundary=endofsection ! multisocketsink name=msocksink sync=false"
@@ -446,6 +446,7 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
     g_autoptr (GstElement) pipeline = NULL;
     g_autoptr (GstElement) src = NULL;
     g_autoptr (GError) error = NULL;
+    g_autofree gchar *streamid = NULL;
     g_autofree gchar *pipeline_desc =
         _build_srtsrc_pipeline_desc (self->relay_url, width, height, fps,
         latency);
@@ -457,9 +458,11 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
     }
 
     src = gst_bin_get_by_name (GST_BIN (pipeline), "src");
-    g_object_set (src, "streamid", uid, NULL);
+    streamid = g_strdup_printf ("#!::u=%s,r=%s", uid, rid);
+    g_object_set (src, "streamid", streamid, NULL);
 
-    g_debug ("Created transcoding pipeline for (id: %s)", request_id);
+    g_debug ("Created transcoding pipeline for (id: %s, %s)", request_id,
+        streamid);
 
     gst_element_set_state (pipeline, GST_STATE_READY);
 
