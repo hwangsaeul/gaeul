@@ -166,8 +166,9 @@ _delete_tmpdir (const gchar * tmpdir)
   }
 }
 
-static void
-gaeul_source_application_startup (GApplication * app)
+static int
+gaeul_source_application_command_line (GApplication * app,
+    GApplicationCommandLine * command_line)
 {
   GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (app);
   g_autofree gchar *source_conf_dir = NULL;
@@ -177,7 +178,7 @@ gaeul_source_application_startup (GApplication * app)
   g_autofree gchar *uid = NULL;
   GaeguliEncodingMethod encoding_method;
 
-  g_debug ("startup");
+  g_debug ("command_line");
 
   g_clear_object (&self->settings);
   self->settings = gaeul_gsettings_new (GAEUL_SOURCE_APPLICATION_SCHEMA_ID,
@@ -249,12 +250,18 @@ gaeul_source_application_startup (GApplication * app)
 
     nest = gaeguli_nest_new (pipeline);
 
-    gaeguli_nest_start (nest, stream_id, target_uri, video_codec,
-        video_resolution, fps, bitrate);
+    if (!gaeguli_nest_start (nest, stream_id, target_uri, video_codec,
+            video_resolution, fps, bitrate)) {
+      goto error;
+    }
     self->gaegulis = g_list_prepend (self->gaegulis, gaeguli_nest_ref (nest));
   }
 
-  G_APPLICATION_CLASS (gaeul_source_application_parent_class)->startup (app);
+  return EXIT_SUCCESS;
+
+error:
+  g_application_quit (app);
+  return EXIT_FAILURE;
 }
 
 static void
@@ -340,7 +347,7 @@ gaeul_source_application_class_init (GaeulSourceApplicationClass * klass)
   g_object_class_install_properties (object_class, G_N_ELEMENTS (properties),
       properties);
 
-  app_class->startup = gaeul_source_application_startup;
+  app_class->command_line = gaeul_source_application_command_line;
   app_class->activate = gaeul_source_application_activate;
   app_class->shutdown = gaeul_source_application_shutdown;
 }
@@ -348,4 +355,6 @@ gaeul_source_application_class_init (GaeulSourceApplicationClass * klass)
 static void
 gaeul_source_application_init (GaeulSourceApplication * self)
 {
+  g_application_set_flags (G_APPLICATION (self),
+      G_APPLICATION_HANDLES_COMMAND_LINE);
 }
