@@ -65,14 +65,14 @@ gaeguli_nest_ref (GaeguliNest * nest)
   return nest;
 }
 
-static void
+static gboolean
 gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
     const gchar * uri, GaeguliVideoCodec codec,
     GaeguliVideoResolution resolution, guint fps, guint bitrates)
 {
   g_autoptr (GError) error = NULL;
 
-  g_return_if_fail (nest->target_stream_id == 0);
+  g_return_val_if_fail (nest->target_stream_id == 0, FALSE);
 
   nest->target_stream_id =
       gaeguli_pipeline_add_srt_target_full (nest->pipeline, codec, resolution,
@@ -81,8 +81,10 @@ gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
   if (nest->target_stream_id == 0) {
     g_debug ("Failed to add srt target to pipeline (reason: %s)",
         error->message);
-    return;
+    return FALSE;
   }
+
+  return TRUE;
 }
 
 static void
