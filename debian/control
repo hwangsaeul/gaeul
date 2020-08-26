@@ -6,7 +6,7 @@ Build-Depends: debhelper (>= 10~),
   pkg-config,
   libglib2.0-dev,
   libjson-glib-dev,
-  libgaeguli-dev,
+  libgaeguli-dev (>= 0.10.2~),
   libssl-dev,
   libsrt-dev,
   libgstreamer1.0-dev,
@@ -21,7 +21,7 @@ Package: libgaeul2
 Architecture: any
 Depends:
   gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-plugins-ugly,
-  libgaeguli1,
+  libgaeguli1 (>= 0.10.2~),
   ${shlibs:Depends}, ${misc:Depends}
 Description:  SRT Streaming Application library
  Gaeul is a reference application that handles SRT stream.

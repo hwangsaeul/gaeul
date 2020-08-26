@@ -49,7 +49,7 @@ json_glib_dep = dependency ('json-glib-1.0', version: '>= 1.1.2')
 
 hwangsaeul_req_version = '>= 0.10.0'
 
-gaeguli_dep = dependency('gaeguli-1.0', version: hwangsaeul_req_version,
+gaeguli_dep = dependency('gaeguli-1.0', version: '>= 0.10.2',
     fallback: ['gaeguli', 'libgaeguli_dep'])
 
 gnome = import('gnome')
