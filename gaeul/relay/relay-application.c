@@ -65,6 +65,18 @@ gaeul_relay_application_startup (GApplication * app)
 }
 
 static void
+gaeul_relay_application_on_io_error (GaeulRelayApplication * app,
+    GInetSocketAddress * address, GError * error)
+{
+  g_autofree gchar *ip = NULL;
+
+  ip = g_inet_address_to_string (g_inet_socket_address_get_address (address));
+
+  g_debug ("(%s:%d) %s", ip, g_inet_socket_address_get_port (address),
+      error->message);
+}
+
+static void
 gaeul_relay_application_activate (GApplication * app)
 {
   GaeulRelayApplication *self = GAEUL_RELAY_APPLICATION (app);
@@ -83,6 +95,9 @@ gaeul_relay_application_activate (GApplication * app)
   self->relay =
       hwangsae_relay_new (self->external_ip, self->sink_port,
       self->source_port);
+
+  g_signal_connect_swapped (self->relay, "io-error",
+      G_CALLBACK (gaeul_relay_application_on_io_error), self);
 
   g_debug ("Starting hwangsae (sink-uri: %s, source-uri: %s)",
       hwangsae_relay_get_sink_uri (self->relay),
