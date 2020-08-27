@@ -1,8 +1,11 @@
-gaeul (0.19.2-0h8l1) UNRELEASED; urgency=medium
+gaeul (0.19.3-0h8l0) unstable; urgency=medium
 
+  [ J. Kim ]
   * debian: add gaeguli dependency
+  * docs: add QA guide in Korean
+  * build: requires gaeguli >= 0.10.2
 
- -- J. Kim <jeongseok.kim@sk.com>  Tue, 28 Jul 2020 19:50:28 +0900
+ -- Justin Kim <jeongseok.kim@sk.com>  Thu, 27 Aug 2020 12:55:15 +0000
 
 gaeul (0.19.1-0h8l1) unstable; urgency=medium
 
