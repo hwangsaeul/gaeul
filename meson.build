@@ -51,7 +51,7 @@ hwangsaeul_req_version = '>= 0.10.0'
 
 gaeguli_dep = dependency('gaeguli-1.0', version: hwangsaeul_req_version,
     fallback: ['gaeguli', 'libgaeguli_dep'])
-hwangsae_dep = dependency('gaeguli-1.0', version: hwangsaeul_req_version,
+hwangsae_dep = dependency('hwangsae-1.0', version: hwangsaeul_req_version,
     fallback: ['hwangsae', 'libhwangsae_dep'])
 
 gnome = import('gnome')
