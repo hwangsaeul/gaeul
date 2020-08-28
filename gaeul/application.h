@@ -41,10 +41,10 @@ int     gaeul_application_run       (GaeulApplication      *self,
                                      int                    argc,
                                      char                 **argv);
 
-void            gaeul_application_set_id    (GaeulApplication      *self,
-                                             const gchar           *id);
+void            gaeul_application_set_uid   (GaeulApplication      *self,
+                                             const gchar           *uid);
 
-const gchar    *gaeul_application_get_id    (GaeulApplication      *self);
+const gchar    *gaeul_application_get_uid   (GaeulApplication      *self);
 
 void            gaeul_application_set_config_path
                                             (GaeulApplication      *self,

@@ -214,16 +214,16 @@ gaeul_application_init (GaeulApplication * self)
 }
 
 void
-gaeul_application_set_id (GaeulApplication * self, const gchar * id)
+gaeul_application_set_uid (GaeulApplication * self, const gchar * uid)
 {
   g_return_if_fail (GAEUL_IS_APPLICATION (self));
-  g_return_if_fail (id != NULL);
+  g_return_if_fail (uid != NULL);
 
-  g_object_set (self, "id", id, NULL);
+  g_object_set (self, "uid", uid, NULL);
 }
 
 const gchar *
-gaeul_application_get_id (GaeulApplication * self)
+gaeul_application_get_uid (GaeulApplication * self)
 {
   GaeulApplicationPrivate *priv = gaeul_application_get_instance_private (self);
 
