@@ -31,6 +31,12 @@ struct _GaeulApplicationClass
   GApplicationClass parent_class;
 };
 
+typedef enum {
+  GAEUL_APPLICATION_DBUS_TYPE_NONE = G_BUS_TYPE_NONE,
+  GAEUL_APPLICATION_DBUS_TYPE_SYSTEM = G_BUS_TYPE_SYSTEM,
+  GAEUL_APPLICATION_DBUS_TYPE_SESSION = G_BUS_TYPE_SESSION,
+} GaeulApplicationDBusType; 
+
 int     gaeul_application_run       (GaeulApplication      *self,
                                      int                    argc,
                                      char                 **argv);

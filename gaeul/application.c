@@ -17,11 +17,13 @@
  */
 
 #include "application.h"
+#include "enumtypes.h"
 
 typedef enum
 {
   PROP_UID = 1,
   PROP_CONFIG_PATH,
+  PROP_DBUS_TYPE,
 
   /*< private > */
 
@@ -36,6 +38,7 @@ typedef struct
 
   gchar *uid;
   gchar *config_path;
+  GaeulApplicationDBusType dbus_type;
 
 } GaeulApplicationPrivate;
 
@@ -126,6 +129,9 @@ gaeul_application_get_property (GObject * object,
     case PROP_CONFIG_PATH:
       g_value_set_string (value, priv->config_path);
       break;
+    case PROP_DBUS_TYPE:
+      g_value_set_enum (value, priv->dbus_type);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -147,6 +153,9 @@ gaeul_application_set_property (GObject * object,
     case PROP_CONFIG_PATH:
       g_free (priv->config_path);
       priv->config_path = g_value_dup_string (value);
+      break;
+    case PROP_DBUS_TYPE:
+      priv->dbus_type = g_value_get_enum (value);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -185,6 +194,11 @@ gaeul_application_class_init (GaeulApplicationClass * klass)
       g_param_spec_string ("config-path", "config-path", "config-path", NULL,
       G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
 
+  properties[PROP_DBUS_TYPE] =
+      g_param_spec_enum ("dbus-type", "dbus-type", "dbus-type",
+      GAEUL_TYPE_APPLICATION_DBUS_TYPE, GAEUL_APPLICATION_DBUS_TYPE_SESSION,
+      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
+
   g_object_class_install_properties (object_class, G_N_ELEMENTS (properties),
       properties);
 
@@ -194,6 +208,9 @@ gaeul_application_class_init (GaeulApplicationClass * klass)
 static void
 gaeul_application_init (GaeulApplication * self)
 {
+  GaeulApplicationPrivate *priv = gaeul_application_get_instance_private (self);
+
+  priv->dbus_type = GAEUL_APPLICATION_DBUS_TYPE_SESSION;
 }
 
 void
