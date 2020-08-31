@@ -1,8 +1,8 @@
-gaeul (0.11.0-4h8l0) UNRELEASED; urgency=medium
+gaeul (1.99.0-0h8l0) UNRELEASED; urgency=medium
 
   * Bump up version
   * Break ABI compatibility
-  * Introduce gaeul2-source-agent
+  * Introduce gaeul2-{mjpeg,relay,source}-agent
 
  -- Jeongseok Kim <jeongseok.kim@sk.com>  Tue, 02 Jun 2020 17:09:07 +0900
 
