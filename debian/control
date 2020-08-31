@@ -7,6 +7,7 @@ Build-Depends:
  libglib2.0-dev,
  libgstreamer-plugins-bad1.0-dev,
  libgstreamer1.0-dev,
+ libhwangsae-dev,
  libsoup2.4-dev,
  libsrt-dev,
  libssl-dev,
@@ -40,6 +41,17 @@ Description: A Reference Application for Transcoding
  Gaeul2 MJPEG Agent is a reference application that runs on server
  to stream MJPEG over HTTP from MPEG-TS over SRT.
 
+Package: gaeul2-relay-agent
+Architecture: any
+Depends:
+ libgaeul2-relay (= ${binary:Version}),
+ libhwangsae2,
+ ${misc:Depends},
+ ${shlibs:Depends},
+Description: A Reference Application for SRT Edge
+ Gaeul2 Source Agent is a reference application that runs on edge
+ to stream via SRT.
+
 Package: gaeul2-source-agent
 Architecture: any
 Depends:
@@ -71,6 +83,18 @@ Depends:
  ${misc:Depends},
  ${shlibs:Depends},
 Description: SRT MJPEG Transcoding Application library
+ Gaeul is a reference application that handles SRT stream.
+
+Package: libgaeul2-relay
+Architecture: any
+Depends:
+ gstreamer1.0-plugins-bad,
+ gstreamer1.0-plugins-good,
+ gstreamer1.0-plugins-ugly,
+ libgaeul2 (= ${binary:Version}),
+ ${misc:Depends},
+ ${shlibs:Depends},
+Description: SRT Streaming Application library
  Gaeul is a reference application that handles SRT stream.
 
 Package: libgaeul2-source
