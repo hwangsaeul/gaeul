@@ -53,6 +53,12 @@ void            gaeul_application_set_config_path
 const gchar    *gaeul_application_get_config_path
                                             (GaeulApplication      *self);
 
+GaeulApplicationDBusType        gaeul_application_get_dbus_type
+                                            (GaeulApplication      *self);
+
+GaeulApplicationDBusType        gaeul_application_dbus_type_get_by_name
+                                            (const gchar *nick);
+
 G_END_DECLS
 
 #endif // __GAEUL_APPLICATION_H__

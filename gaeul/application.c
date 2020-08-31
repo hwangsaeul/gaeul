@@ -56,11 +56,6 @@ gaeul_application_run (GaeulApplication * self, int argc, char **argv)
   return (ret == 0) ? priv->exit_status : ret;
 }
 
-#if 0
-
-/** FIXME: When trying to acquire system bus on nvidia,
-  * it is always failed. This should be fixed later */
-
 static void
 _dbus_name_acquired (GDBusConnection * connection, const gchar * name,
     gpointer user_data)
@@ -100,19 +95,18 @@ _dbus_name_lost (GDBusConnection * connection, const gchar * name,
   g_application_quit (G_APPLICATION (self));
 }
 
-#endif
-
 static void
 gaeul_application_startup (GApplication * app)
 {
+  GaeulApplication *self = GAEUL_APPLICATION (app);
+  GaeulApplicationPrivate *priv = gaeul_application_get_instance_private (self);
+
   G_APPLICATION_CLASS (gaeul_application_parent_class)->startup (app);
 
-#if 0
-  if (getppid () == 1) {
+  if (priv->dbus_type == GAEUL_APPLICATION_DBUS_TYPE_SYSTEM) {
     g_bus_own_name (G_BUS_TYPE_SYSTEM, g_application_get_application_id (app),
         0, NULL, _dbus_name_acquired, _dbus_name_lost, app, NULL);
   }
-#endif
 }
 
 static void
@@ -250,4 +244,25 @@ gaeul_application_get_config_path (GaeulApplication * self)
   g_return_val_if_fail (GAEUL_IS_APPLICATION (self), NULL);
 
   return priv->config_path;
+}
+
+GaeulApplicationDBusType
+gaeul_application_get_dbus_type (GaeulApplication * self)
+{
+  GaeulApplicationPrivate *priv = gaeul_application_get_instance_private (self);
+
+  g_return_val_if_fail (GAEUL_IS_APPLICATION (self),
+      GAEUL_APPLICATION_DBUS_TYPE_NONE);
+
+  return priv->dbus_type;
+}
+
+GaeulApplicationDBusType
+gaeul_application_dbus_type_get_by_name (const gchar * nick)
+{
+  g_autoptr (GEnumClass) enum_class =
+      g_type_class_ref (GAEUL_TYPE_APPLICATION_DBUS_TYPE);
+  GEnumValue *enum_value = g_enum_get_value_by_nick (enum_class, nick);
+
+  return enum_value->value;
 }
