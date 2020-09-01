@@ -103,6 +103,8 @@ gaeul_relay_application_activate (GApplication * app)
       hwangsae_relay_get_sink_uri (self->relay),
       hwangsae_relay_get_source_uri (self->relay));
 
+  hwangsae_relay_start (self->relay);
+
   G_APPLICATION_CLASS (gaeul_relay_application_parent_class)->activate (app);
 }
 
