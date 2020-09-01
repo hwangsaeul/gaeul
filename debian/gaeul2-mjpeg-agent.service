@@ -5,7 +5,7 @@ Description=Media Transcoder of H8L
 Type=simple
 EnvironmentFile=-/etc/default/gaeul2-mjpeg-agent
 User=gaeul
-ExecStart=/usr/bin/gaeul2-mjepg-agent $OPTIONS
+ExecStart=/usr/bin/gaeul2-mjpeg-agent $OPTIONS
 Restart=on-failure
 
 [Install]
