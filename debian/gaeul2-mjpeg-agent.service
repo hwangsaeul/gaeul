@@ -3,9 +3,9 @@ Description=Media Transcoder of H8L
 
 [Service]
 Type=simple
-Environment=GST_DEBUG=3
+EnvironmentFile=-/etc/default/gaeul2-mjpeg-agent
 User=gaeul
-ExecStart=/usr/bin/gaeul2-mjepg-agent -c /etc/gaeul2/gaeul2.ini
+ExecStart=/usr/bin/gaeul2-mjepg-agent $OPTIONS
 Restart=on-failure
 
 [Install]
