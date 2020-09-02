@@ -6,12 +6,14 @@ source_h = [
   'gaeul.h',
   'application.h',
   'tuple.h',
+  'stream-authenticator.h',
 ]
 
 source_c = [
   'gaeul.c',
   'application.c',
   'tuple.c',
+  'stream-authenticator.c',
 ]
 
 gstreamer_dep = dependency ('gstreamer-1.0', version: '>= 1.14.0')
@@ -32,7 +34,13 @@ libgaeul = library(
   version: libversion,
   soversion: soversion,
   include_directories: gaeul_incs,
-  dependencies: [ gio_dep, gaeguli_dep, gstreamer_dep, gstreamer_pbutils_dep ],
+  dependencies: [
+    gio_dep,
+    gaeguli_dep,
+    gstreamer_dep,
+    gstreamer_pbutils_dep,
+    hwangsae_dep,
+  ],
   c_args: [ '-DG_LOG_DOMAIN="GAEUL2"' ],
   link_args: common_ldflags,
   install: true
