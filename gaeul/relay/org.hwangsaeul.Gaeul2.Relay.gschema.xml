@@ -22,5 +22,13 @@
         URIs. Otherwise, the first available non-loopback IP is used.
       </description>
     </key>
+    <key name="authentication" type="b">
+      <default>true</default>
+      <summary>Authentication</summary>
+      <description>
+        Enables stream authentication with username and resource identifier
+        exchanged in SRT Stream ID.
+      </description>
+    </key>
   </schema>
 </schemalist>

@@ -84,6 +84,9 @@ gaeul_relay_application_activate (GApplication * app)
       hwangsae_relay_new (self->external_ip, self->sink_port,
       self->source_port);
 
+  g_object_set (self->relay, "authentication",
+      g_settings_get_boolean (self->settings, "authentication"), NULL);
+
   g_signal_connect_swapped (self->relay, "io-error",
       G_CALLBACK (gaeul_relay_application_on_io_error), self);
 
