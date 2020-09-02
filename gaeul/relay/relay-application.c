@@ -53,18 +53,6 @@ G_DEFINE_TYPE (GaeulRelayApplication, gaeul_relay_application, GAEUL_TYPE_APPLIC
 /* *INDENT-ON* */
 
 static void
-gaeul_relay_application_startup (GApplication * app)
-{
-  GaeulRelayApplication *self = GAEUL_RELAY_APPLICATION (app);
-
-  g_clear_object (&self->settings);
-  self->settings = gaeul_gsettings_new (GAEUL_RELAY_APPLICATION_SCHEMA_ID,
-      gaeul_application_get_config_path (GAEUL_APPLICATION (self)));
-
-  G_APPLICATION_CLASS (gaeul_relay_application_parent_class)->startup (app);
-}
-
-static void
 gaeul_relay_application_on_io_error (GaeulRelayApplication * app,
     GInetSocketAddress * address, GError * error)
 {
@@ -202,7 +190,6 @@ gaeul_relay_application_class_init (GaeulRelayApplicationClass * klass)
   g_object_class_install_properties (object_class, G_N_ELEMENTS (properties),
       properties);
 
-  app_class->startup = gaeul_relay_application_startup;
   app_class->activate = gaeul_relay_application_activate;
   app_class->shutdown = gaeul_relay_application_shutdown;
 }
