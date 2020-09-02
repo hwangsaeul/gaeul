@@ -58,7 +58,6 @@ main (int argc, char **argv)
   }
 
   app = G_APPLICATION (g_object_new (GAEUL_TYPE_RELAY_APPLICATION,
-          "application-id", GAEUL_RELAY_APPLICATION_SCHEMA_ID,
           "config-path", config, NULL));
 
   g_unix_signal_add (SIGINT, (GSourceFunc) intr_handler, app);
