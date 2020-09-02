@@ -68,6 +68,8 @@ static void
 gaeul_relay_application_activate (GApplication * app)
 {
   GaeulRelayApplication *self = GAEUL_RELAY_APPLICATION (app);
+  g_autofree gchar *master_uri = NULL;
+  g_autofree gchar *master_username = NULL;
 
   self->settings = gaeul_gsettings_new (GAEUL_RELAY_APPLICATION_SCHEMA_ID,
       gaeul_application_get_config_path (GAEUL_APPLICATION (self)));
@@ -86,6 +88,13 @@ gaeul_relay_application_activate (GApplication * app)
 
   g_object_set (self->relay, "authentication",
       g_settings_get_boolean (self->settings, "authentication"), NULL);
+
+  master_uri = g_settings_get_string (self->settings, "master-uri");
+  master_username = g_settings_get_string (self->settings, "master-username");
+  if (master_uri && strlen (master_uri) > 0) {
+    g_object_set (self->relay, "master-uri", master_uri,
+        "master-username", master_username, NULL);
+  }
 
   g_signal_connect_swapped (self->relay, "io-error",
       G_CALLBACK (gaeul_relay_application_on_io_error), self);

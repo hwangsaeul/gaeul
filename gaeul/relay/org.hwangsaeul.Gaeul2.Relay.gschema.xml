@@ -30,5 +30,23 @@
         exchanged in SRT Stream ID.
       </description>
     </key>
+    <key name="master-uri" type="s">
+      <default>""</default>
+      <summary>Master relay URI</summary>
+      <description>
+        When set, the relay will switch into slave mode: on an incoming source
+        connection, the relay will open a sink with the master for the requested
+        resource and forward the stream to the sink. Slave relays don't listen
+        for sink connections.
+      </description>
+    </key>
+    <key name="master-username" type="s">
+      <default>""</default>
+      <summary>Username to use for master relay connections</summary>
+      <description>
+        The username this slave relay should use to authenticate with its master
+        when opening sink connections.
+      </description>
+    </key>
   </schema>
 </schemalist>
