@@ -19,6 +19,7 @@
 #include "config.h"
 
 #include "gaeul.h"
+#include "stream-authenticator.h"
 #include "gaeul/relay/relay-application.h"
 
 #include <hwangsae/hwangsae.h>
@@ -40,6 +41,7 @@ struct _GaeulRelayApplication
   GaeulApplication parent;
 
   HwangsaeRelay *relay;
+  GaeulStreamAuthenticator *auth;
 
   guint sink_port;
   guint source_port;
@@ -85,6 +87,7 @@ gaeul_relay_application_activate (GApplication * app)
   self->relay =
       hwangsae_relay_new (self->external_ip, self->sink_port,
       self->source_port);
+  self->auth = gaeul_stream_authenticator_new (self->relay);
 
   g_object_set (self->relay, "authentication",
       g_settings_get_boolean (self->settings, "authentication"), NULL);
@@ -113,6 +116,7 @@ gaeul_relay_application_shutdown (GApplication * app)
 {
   GaeulRelayApplication *self = GAEUL_RELAY_APPLICATION (app);
 
+  g_clear_object (&self->auth);
   g_clear_object (&self->relay);
   g_clear_object (&self->settings);
 
@@ -125,6 +129,7 @@ gaeul_relay_application_dispose (GObject * object)
   GaeulRelayApplication *self = GAEUL_RELAY_APPLICATION (object);
 
   g_clear_object (&self->settings);
+  g_clear_object (&self->auth);
   g_clear_object (&self->relay);
 
   G_OBJECT_CLASS (gaeul_relay_application_parent_class)->dispose (object);
