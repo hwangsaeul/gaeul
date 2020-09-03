@@ -8,6 +8,7 @@ Build-Depends:
  libgstreamer-plugins-bad1.0-dev,
  libgstreamer1.0-dev,
  libhwangsae-dev,
+ libhwangsae-test-common-dev,
  libsoup2.4-dev,
  libsrt-dev,
  libssl-dev,
