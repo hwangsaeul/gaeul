@@ -15,9 +15,16 @@ install_data([ relay_setting ],
 relay_schemas = gnome.compile_schemas(depend_files: relay_setting)
 relay_schemas_dir = meson.current_build_dir()
 
+dbus_sources = gnome.gdbus_codegen(
+  'relay-generated',
+  sources: gaeul_fqdn_prefix + '.Relay.xml',
+  interface_prefix: gaeul_fqdn_prefix,
+  namespace: 'Gaeul2DBus',
+)
+
 libgaeul_relay = library(
   'gaeul-relay-@0@'.format(apiversion),
-  source_c, relay_schemas,
+  source_c, relay_schemas, dbus_sources,
   version: libversion,
   soversion: soversion,
   include_directories: gaeul_incs,

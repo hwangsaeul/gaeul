@@ -21,6 +21,7 @@
 #include "gaeul.h"
 #include "stream-authenticator.h"
 #include "gaeul/relay/relay-application.h"
+#include "gaeul/relay/relay-generated.h"
 
 #include <hwangsae/hwangsae.h>
 
@@ -48,6 +49,7 @@ struct _GaeulRelayApplication
   gchar *external_ip;
 
   GSettings *settings;
+  Gaeul2DBusRelay *dbus_service;
 };
 
 /* *INDENT-OFF* */
@@ -181,6 +183,91 @@ gaeul_relay_application_set_property (GObject * object,
   }
 }
 
+static gboolean
+gaeul_relay_application_handle_add_sink_token (GaeulRelayApplication * self,
+    GDBusMethodInvocation * invocation, const gchar * username)
+{
+  gaeul_stream_authenticator_add_sink_token (self->auth, username);
+  gaeul2_dbus_relay_complete_add_sink_token (self->dbus_service, invocation);
+  return TRUE;
+}
+
+static gboolean
+gaeul_relay_application_handle_add_source_token (GaeulRelayApplication * self,
+    GDBusMethodInvocation * invocation, const gchar * username,
+    const gchar * resource)
+{
+  gaeul_stream_authenticator_add_source_token (self->auth, username, resource);
+  gaeul2_dbus_relay_complete_add_source_token (self->dbus_service, invocation);
+  return TRUE;
+}
+
+static gboolean
+gaeul_relay_application_handle_remove_sink_token (GaeulRelayApplication * self,
+    GDBusMethodInvocation * invocation, const gchar * username)
+{
+  gaeul_stream_authenticator_remove_sink_token (self->auth, username);
+  gaeul2_dbus_relay_complete_remove_sink_token (self->dbus_service, invocation);
+  return TRUE;
+}
+
+static gboolean
+gaeul_relay_application_handle_remove_source_token (GaeulRelayApplication *
+    self, GDBusMethodInvocation * invocation, const gchar * username,
+    const gchar * resource)
+{
+  gaeul_stream_authenticator_remove_source_token (self->auth, username,
+      resource);
+  gaeul2_dbus_relay_complete_remove_source_token (self->dbus_service,
+      invocation);
+  return TRUE;
+}
+
+static gboolean
+gaeul_relay_application_dbus_register (GApplication * app,
+    GDBusConnection * connection, const gchar * object_path, GError ** error)
+{
+  GaeulRelayApplication *self = GAEUL_RELAY_APPLICATION (app);
+
+  if (!self->dbus_service) {
+    self->dbus_service = gaeul2_dbus_relay_skeleton_new ();
+
+    g_signal_connect_swapped (self->dbus_service, "handle-add-sink-token",
+        (GCallback) gaeul_relay_application_handle_add_sink_token, self);
+    g_signal_connect_swapped (self->dbus_service, "handle-add-source-token",
+        (GCallback) gaeul_relay_application_handle_add_source_token, self);
+    g_signal_connect_swapped (self->dbus_service, "handle-remove-sink-token",
+        (GCallback) gaeul_relay_application_handle_remove_sink_token, self);
+    g_signal_connect_swapped (self->dbus_service, "handle-remove-source-token",
+        (GCallback) gaeul_relay_application_handle_remove_source_token, self);
+  }
+
+  if (!G_APPLICATION_CLASS (gaeul_relay_application_parent_class)->dbus_register
+      (app, connection, object_path, error)) {
+    return FALSE;
+  }
+
+  return
+      g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON
+      (self->dbus_service), connection, object_path, error);
+}
+
+static void
+gaeul_relay_application_dbus_unregister (GApplication * app,
+    GDBusConnection * connection, const gchar * object_path)
+{
+  GaeulRelayApplication *self = GAEUL_RELAY_APPLICATION (app);
+
+  if (self->dbus_service) {
+    g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON
+        (self->dbus_service));
+    g_clear_object (&self->dbus_service);
+  }
+
+  G_APPLICATION_CLASS (gaeul_relay_application_parent_class)->dbus_unregister
+      (app, connection, object_path);
+}
+
 static void
 gaeul_relay_application_class_init (GaeulRelayApplicationClass * klass)
 {
@@ -209,6 +296,8 @@ gaeul_relay_application_class_init (GaeulRelayApplicationClass * klass)
 
   app_class->activate = gaeul_relay_application_activate;
   app_class->shutdown = gaeul_relay_application_shutdown;
+  app_class->dbus_register = gaeul_relay_application_dbus_register;
+  app_class->dbus_unregister = gaeul_relay_application_dbus_unregister;
 }
 
 static void

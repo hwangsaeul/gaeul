@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd" name="/">
+  <interface name="org.hwangsaeul.Gaeul2.Relay">
+    <!--
+      AddSinkToken:
+      @username: sink username
+
+      Gives a SRT endpoint identifying itself as @username permission to connect
+      to the relay as a sink.
+    -->
+    <method name="AddSinkToken">
+      <arg name="username" type="s" direction="in"/>
+    </method>
+
+    <!--
+      AddSourceToken:
+      @username: source username
+      @resource: sink resource identifier
+
+      Gives a SRT endpoint identifying itself as @username permission to connect
+      to the relay as a source and request streaming of @resource.
+    -->
+    <method name="AddSourceToken">
+      <arg name="username" type="s" direction="in"/>
+      <arg name="resource" type="s" direction="in"/>
+    </method>
+
+    <!--
+      RemoveSinkToken:
+      @username: sink username
+
+      Removes @username from the list of accepted sink tokens. Sink endpoints
+      identifying itself with that name will be rejected connection.
+    -->
+    <method name="RemoveSinkToken">
+      <arg name="username" type="s" direction="in"/>
+    </method>
+
+    <!--
+      RemoveSourceToken:
+      @username: source username
+      @resource: sink resource identifier
+
+      Rejects @username access to the stream identified as @resource.
+    -->
+    <method name="RemoveSourceToken">
+      <arg name="username" type="s" direction="in"/>
+      <arg name="resource" type="s" direction="in"/>
+    </method>
+  </interface>
+</node>
