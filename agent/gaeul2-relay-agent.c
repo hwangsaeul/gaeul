@@ -40,6 +40,7 @@ main (int argc, char **argv)
   g_autoptr (GApplication) app = NULL;
   g_autoptr (GError) error = NULL;
   g_autoptr (GOptionContext) context = NULL;
+  g_autofree gchar *app_id = NULL;
 
   const gchar *config = NULL;
   GOptionEntry entries[] = {
@@ -57,8 +58,10 @@ main (int argc, char **argv)
     return -1;
   }
 
+  app_id = g_strdup_printf (GAEUL_RELAY_APPLICATION_SCHEMA_ID "_%d", getpid ());
+
   app = G_APPLICATION (g_object_new (GAEUL_TYPE_RELAY_APPLICATION,
-          "config-path", config, NULL));
+          "application-id", app_id, "config-path", config, NULL));
 
   g_unix_signal_add (SIGINT, (GSourceFunc) intr_handler, app);
 
