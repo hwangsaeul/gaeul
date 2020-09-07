@@ -35,7 +35,7 @@ jobs:
                   libjson-glib-dev \
                   libgstreamer-plugins-bad1.0-dev \
                   libgaeguli-dev gaeguli-tools \
-                  libhwangsae-dev \
+                  libhwangsae-dev libhwangsae-test-common-dev \
                   meson ninja-build
 
       - name: Compile
