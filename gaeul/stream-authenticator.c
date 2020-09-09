@@ -100,7 +100,7 @@ void
 gaeul_stream_authenticator_remove_source_token (GaeulStreamAuthenticator * self,
     const gchar * username, const gchar * resource)
 {
-  g_autofree gchar *token;
+  g_autofree gchar *token = NULL;
   GSequenceIter *it;
 
   g_return_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self));
