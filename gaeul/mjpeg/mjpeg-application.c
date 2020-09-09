@@ -432,6 +432,7 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
     GaeulMjpegRequest *r = key;
 
     if (gaeul_mjpeg_request_equal (r, request)) {
+      g_clear_pointer (&request, gaeul_mjpeg_request_unref);
       request = gaeul_mjpeg_request_ref (r);
       found = TRUE;
       g_debug ("found existing mjpeg transcoder pipeline (id: %s)", request_id);
@@ -466,11 +467,11 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
 
     gst_element_set_state (pipeline, GST_STATE_READY);
 
-    g_hash_table_insert (self->pipelines, gaeul_mjpeg_request_ref (request),
-        gst_object_ref (pipeline));
+    g_hash_table_insert (self->pipelines, request, g_steal_pointer (&pipeline));
   }
 
-  g_hash_table_insert (self->request_ids, g_strdup (request_id), request);
+  g_hash_table_insert (self->request_ids, g_strdup (request_id),
+      g_steal_pointer (&request));
 
   gaeul2_dbus_mjpegservice_complete_start (object, invocation, return_url,
       request_id);
