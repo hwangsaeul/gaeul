@@ -37,5 +37,11 @@
       <arg name="request_id" type="s" direction="in"/>
     </method>
 
+    <property name="OverallStats" type="(iitt)" access="read"/>
+    <property name="NumberOfSRTConnections" type="i" access="read"/>
+    <property name="NumberOfHTTPConnections" type="i" access="read"/>
+    <property name="TotalBytesReceived" type="t" access="read"/>
+    <property name="TotalBytesSent" type="t" access="read"/>
+
   </interface>
 </node>

@@ -26,5 +26,11 @@
       <range min="1" max="1024"/>
       <default>16</default>
     </key>
-  </schema>
+    <key name="statistics" type="b">
+      <default>true</default>
+    </key>
+    <key name="statistics-interval" type="u">
+      <default>1000</default>
+    </key>
+ </schema>
 </schemalist>

@@ -19,8 +19,8 @@
 #include "config.h"
 
 #include "gaeul.h"
-#include "mjpeg/mjpeg-application.h"
 
+#include "mjpeg/mjpeg-application.h"
 #include "mjpeg/mjpeg-request.h"
 
 #include "mjpeg/mjpeg-generated.h"
@@ -74,6 +74,13 @@ struct _GaeulMjpegApplication
   guint limit_sessions_per_user;
 
   gchar *local_ip;
+
+  /* statistics */
+  guint stats_timeout_id;
+  GList *client_sockets;
+
+  guint64 srt_bytes_received;
+  guint64 http_bytes_sent;
 };
 
 /* *INDENT-OFF* */
@@ -178,6 +185,71 @@ gaeul_mjpeg_application_dispose (GObject * object)
 }
 
 static void
+_collect_stats (gpointer key, gpointer value, gpointer user_data)
+{
+  GaeulMjpegApplication *self = user_data;
+  GstElement *pipeline = value;
+
+  g_autoptr (GstElement) src = NULL;
+  g_autoptr (GstElement) sink = NULL;
+  g_autoptr (GstStructure) s1 = NULL;
+  g_autoptr (GstStructure) s2 = NULL;
+  g_autofree gchar *str = NULL;
+  GList *l = NULL;
+  guint64 srt_received = 0;
+  guint64 http_sent = 0;
+
+  src = gst_bin_get_by_name (GST_BIN (pipeline), "src");
+  sink = gst_bin_get_by_name (GST_BIN (pipeline), "msocksink");
+
+  g_object_get (src, "stats", &s1, NULL);
+
+  if (gst_structure_get_uint64 (s1, "bytes-received-total", &srt_received)) {
+    self->srt_bytes_received += srt_received;
+  }
+
+  for (l = self->client_sockets; l != NULL; l = l->next) {
+    g_signal_emit_by_name (sink, "get-stats", l->data, &s2, NULL);
+
+    if (gst_structure_get_uint64 (s2, "bytes-sent", &http_sent)) {
+      self->http_bytes_sent += http_sent;
+    }
+  }
+
+  {
+    gint n_srtconnections = g_hash_table_size (self->pipelines);
+    gint n_httpconnections = g_list_length (self->client_sockets);
+    g_autoptr (GVariant) overall_stats = NULL;
+
+    gaeul2_dbus_mjpegservice_set_number_of_httpconnections (self->service,
+        n_httpconnections);
+    gaeul2_dbus_mjpegservice_set_number_of_srtconnections (self->service,
+        n_srtconnections);
+    gaeul2_dbus_mjpegservice_set_total_bytes_received (self->service,
+        self->srt_bytes_received);
+    gaeul2_dbus_mjpegservice_set_total_bytes_sent (self->service,
+        self->http_bytes_sent);
+
+    overall_stats =
+        g_variant_new ("(iitt)", n_srtconnections, n_httpconnections,
+        self->srt_bytes_received, self->http_bytes_sent);
+    gaeul2_dbus_mjpegservice_set_overall_stats (self->service,
+        g_variant_ref_sink (overall_stats));
+  }
+}
+
+static gboolean
+_stats_collection_timeout (gpointer user_data)
+{
+  GaeulMjpegApplication *self = user_data;
+
+  g_hash_table_foreach (self->pipelines, _collect_stats, self);
+
+  return G_SOURCE_CONTINUE;
+}
+
+
+static void
 gaeul_mjpeg_application_startup (GApplication * app)
 {
   GaeulMjpegApplication *self = GAEUL_MJPEG_APPLICATION (app);
@@ -213,6 +285,12 @@ gaeul_mjpeg_application_startup (GApplication * app)
 
   if (!soup_server_listen_all (self->soup_server, port, 0, &error)) {
     g_error ("failed to start http server (reason: %s)", error->message);
+  }
+
+  if (g_settings_get_boolean (self->settings, "statistics")) {
+    self->stats_timeout_id =
+        g_timeout_add (g_settings_get_uint (self->settings,
+            "statistics-interval"), _stats_collection_timeout, self);
   }
 
   G_APPLICATION_CLASS (gaeul_mjpeg_application_parent_class)->startup (app);
@@ -395,6 +473,26 @@ _build_return_url (const gchar * external_url, const gchar * local_ip,
   return g_steal_pointer (&url);
 }
 
+static void
+_pipeline_sink_client_added_cb (GstElement * sink, GSocket * socket,
+    gpointer user_data)
+{
+  GaeulMjpegApplication *self = GAEUL_MJPEG_APPLICATION (user_data);
+
+  g_debug ("client added %p", socket);
+  self->client_sockets = g_list_prepend (self->client_sockets, socket);
+}
+
+static void
+_pipeline_sink_client_socket_removed_cb (GstElement * sink, GSocket * socket,
+    gpointer user_data)
+{
+  GaeulMjpegApplication *self = GAEUL_MJPEG_APPLICATION (user_data);
+
+  g_debug ("client removed %p", socket);
+  self->client_sockets = g_list_remove (self->client_sockets, socket);
+}
+
 static gboolean
 gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
     GDBusMethodInvocation * invocation,
@@ -446,6 +544,7 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
 
     g_autoptr (GstElement) pipeline = NULL;
     g_autoptr (GstElement) src = NULL;
+    g_autoptr (GstElement) sink = NULL;
     g_autoptr (GError) error = NULL;
     g_autofree gchar *streamid = NULL;
     g_autofree gchar *pipeline_desc =
@@ -464,6 +563,12 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
 
     g_debug ("Created transcoding pipeline for (id: %s, %s)", request_id,
         streamid);
+
+    sink = gst_bin_get_by_name (GST_BIN (pipeline), "msocksink");
+    g_signal_connect (sink, "client-added",
+        G_CALLBACK (_pipeline_sink_client_added_cb), self);
+    g_signal_connect (sink, "client-socket-removed",
+        G_CALLBACK (_pipeline_sink_client_socket_removed_cb), self);
 
     gst_element_set_state (pipeline, GST_STATE_READY);
 
@@ -493,17 +598,17 @@ gaeul_mjpeg_application_handle_stop (Gaeul2DBusMJPEGService * object,
     return TRUE;
   }
 
-  g_info ("r->refcount: %u", r->refcount);
-
   /* FIXME: It's not a good idea to access refcount directly */
   if (r->refcount > 1) {
     gaeul_mjpeg_request_unref (r);
     g_info ("after unref r->refcount: %u", r->refcount);
   } else {
     GstElement *pipeline = g_hash_table_lookup (self->pipelines, r);
+
     if (pipeline != NULL) {
       gst_element_set_state (pipeline, GST_STATE_NULL);
     }
+    g_debug ("stopping pipeline %p", pipeline);
     g_hash_table_remove (self->pipelines, r);
   }
 
