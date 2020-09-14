@@ -1,3 +1,9 @@
+gaeul (0.19.4-0h8l0) unstable; urgency=medium
+
+  * gaeul: suppress compilation warnings by missing headers
+
+ -- Justin Kim <jeongseok.kim@sk.com>  Mon, 14 Sep 2020 14:05:48 +0000
+
 gaeul (0.19.3-0h8l0) unstable; urgency=medium
 
   [ J. Kim ]
