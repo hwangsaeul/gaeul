@@ -243,11 +243,12 @@ _stats_collection_timeout (gpointer user_data)
 {
   GaeulMjpegApplication *self = user_data;
 
+  self->srt_bytes_received = 0;
+  self->http_bytes_sent = 0;
   g_hash_table_foreach (self->pipelines, _collect_stats, self);
 
   return G_SOURCE_CONTINUE;
 }
-
 
 static void
 gaeul_mjpeg_application_startup (GApplication * app)
