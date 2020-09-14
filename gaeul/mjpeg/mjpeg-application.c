@@ -308,6 +308,7 @@ gaeul_mjpeg_application_shutdown (GApplication * app)
 {
   GaeulMjpegApplication *self = GAEUL_MJPEG_APPLICATION (app);
 
+  g_clear_handle_id (&self->stats_timeout_id, g_source_remove);
   soup_server_remove_handler (self->soup_server, "/mjpeg");
 
   g_debug ("shutdown");
