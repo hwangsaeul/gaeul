@@ -171,12 +171,11 @@ gaeul_source_application_command_line (GApplication * app,
     GApplicationCommandLine * command_line)
 {
   GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (app);
-  g_autofree gchar *source_conf_dir = NULL;
-  const gchar *source_conf_file = NULL;
-  g_autoptr (GDir) confd = NULL;
-  g_autoptr (GError) error = NULL;
   g_autofree gchar *uid = NULL;
   GaeguliEncodingMethod encoding_method;
+
+  g_auto (GStrv) channel_configs = NULL;
+  guint i;
 
   g_debug ("command_line");
 
@@ -197,10 +196,10 @@ gaeul_source_application_command_line (GApplication * app,
   g_object_get (GAEUL_APPLICATION (self), "uid", &uid, NULL);
   encoding_method = (0x7fff & g_settings_get_enum (self->settings, "platform"));
 
-  source_conf_dir = g_settings_get_string (self->settings, "source-conf-dir");
-  confd = g_dir_open (source_conf_dir, 0, &error);
+  channel_configs = g_settings_get_strv (self->settings, "channel-configs");
 
-  while ((source_conf_file = g_dir_read_name (confd)) != NULL) {
+  for (i = 0; i < g_strv_length (channel_configs); i++) {
+    const gchar *conf_file = channel_configs[i];
 
     g_autoptr (GaeguliNest) nest = NULL;
     g_autoptr (GaeguliPipeline) pipeline = NULL;
@@ -212,14 +211,11 @@ gaeul_source_application_command_line (GApplication * app,
     g_autofree gchar *target_host = NULL;
     GaeguliSRTMode target_mode = GAEGULI_SRT_MODE_UNKNOWN;
     guint target_port = 0;
-
     g_autofree gchar *stream_id = NULL;
 
-    g_autofree gchar *sconf_path =
-        g_build_filename (source_conf_dir, source_conf_file, NULL);
     g_autoptr (GSettings) ssettings =
         gaeul_gsettings_new (GAEUL_SOURCE_APPLICATION_SCHEMA_ID ".Node",
-        sconf_path);
+        conf_file);
 
     GaeguliVideoSource video_source = g_settings_get_enum (ssettings, "source");
     GaeguliVideoCodec video_codec = g_settings_get_enum (ssettings, "codec");
@@ -233,13 +229,13 @@ gaeul_source_application_command_line (GApplication * app,
     target_uri = g_settings_get_string (ssettings, "target-uri");
 
     if (!name) {
-      g_info ("config file[%s] doesn't have valid name property", sconf_path);
+      g_info ("config file[%s] doesn't have valid name property", conf_file);
       continue;
     }
 
     if (!gaeul_parse_srt_uri (target_uri, &target_host, &target_port,
             &target_mode)) {
-      g_info ("can't parse srt target uri from config file[%s]", sconf_path);
+      g_info ("can't parse srt target uri from config file[%s]", conf_file);
       continue;
     }
 

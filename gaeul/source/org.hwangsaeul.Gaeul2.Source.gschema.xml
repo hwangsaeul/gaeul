@@ -20,8 +20,8 @@
     <key name="autoclean" type="b">
       <default>true</default>
     </key>
-    <key name="source-conf-dir" type="s">
-      <default>"."</default>
+    <key name="channel-configs" type="as">
+      <default>[""]</default>
     </key>
   </schema>
 
