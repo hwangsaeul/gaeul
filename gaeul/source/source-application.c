@@ -214,7 +214,7 @@ gaeul_source_application_command_line (GApplication * app,
     g_autofree gchar *stream_id = NULL;
 
     g_autoptr (GSettings) ssettings =
-        gaeul_gsettings_new (GAEUL_SOURCE_APPLICATION_SCHEMA_ID ".Node",
+        gaeul_gsettings_new (GAEUL_SOURCE_APPLICATION_SCHEMA_ID ".Channel",
         conf_file);
 
     GaeguliVideoSource video_source = g_settings_get_enum (ssettings, "source");

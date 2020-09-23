@@ -44,7 +44,7 @@
     <value nick="nvarguscamerasrc" value="4"/>
   </enum>
 
-  <schema id="org.hwangsaeul.Gaeul2.Source.Node" path="/org/hwangsaeul/Gaeul2/Source/Node/">
+  <schema id="org.hwangsaeul.Gaeul2.Source.Channel" path="/org/hwangsaeul/Gaeul2/Source/Channel/">
     <key name="name" type="s">
       <default>""</default>
     </key>
