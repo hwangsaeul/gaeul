@@ -44,6 +44,11 @@
     <value nick="nvarguscamerasrc" value="4"/>
   </enum>
 
+  <enum id="org.hwangsaeul.Gaeguli.BitrateControl">
+    <value nick="CBR" value="1"/>
+    <value nick="VBR" value="2"/>
+  </enum>
+
   <schema id="org.hwangsaeul.Gaeul2.Source.Channel" path="/org/hwangsaeul/Gaeul2/Source/Channel/">
     <key name="name" type="s">
       <default>""</default>
@@ -64,6 +69,9 @@
     </key>
     <key name="codec" enum="org.hwangsaeul.Gaeguli.VideoCodec">
       <default>"h264"</default>
+    </key>
+    <key name="bitrate-control" enum="org.hwangsaeul.Gaeguli.BitrateControl">
+      <default>"CBR"</default>
     </key>
     <key name="resolution" enum="org.hwangsaeul.Gaeguli.VideoResolution">
       <default>"640x480"</default>
