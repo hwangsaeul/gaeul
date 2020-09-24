@@ -40,7 +40,7 @@ typedef struct _GaeguliNest
   gint refcount;
 
   GaeguliPipeline *pipeline;
-  guint target_stream_id;
+  GaeguliTarget *target_stream;
 } GaeguliNest;
 
 static GaeguliNest *
@@ -72,13 +72,13 @@ gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
 {
   g_autoptr (GError) error = NULL;
 
-  g_return_val_if_fail (nest->target_stream_id == 0, FALSE);
+  g_return_val_if_fail (nest->target_stream == NULL, FALSE);
 
-  nest->target_stream_id =
+  nest->target_stream =
       gaeguli_pipeline_add_srt_target_full (nest->pipeline, codec, resolution,
       fps, bitrates, uri, stream_id, &error);
 
-  if (nest->target_stream_id == 0) {
+  if (!nest->target_stream) {
     g_debug ("Failed to add srt target to pipeline (reason: %s)",
         error->message);
     return FALSE;
@@ -90,11 +90,11 @@ gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
 static void
 gaeguli_nest_stop (GaeguliNest * nest)
 {
-  if (nest->target_stream_id > 0) {
+  if (nest->target_stream) {
     g_autoptr (GError) error = NULL;
-    gaeguli_pipeline_remove_target (nest->pipeline, nest->target_stream_id,
+    gaeguli_pipeline_remove_target (nest->pipeline, nest->target_stream,
         &error);
-    nest->target_stream_id = 0;
+    nest->target_stream = NULL;
 
     if (error != NULL) {
       g_warning ("%s", error->message);
