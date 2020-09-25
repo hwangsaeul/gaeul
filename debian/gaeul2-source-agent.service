@@ -1,11 +1,11 @@
 [Unit]
-Description=Media streamer of Hwansaeul
+Description=Media streamer of H8L
 
 [Service]
 Type=simple
-Environment=GST_DEBUG=3
+EnvironmentFile=-/etc/default/gaeul2-source-agent
 User=gaeul
-ExecStart=/usr/bin/gaeul2-source-agent -c /etc/gaeul2/gaeul2.ini
+ExecStart=/usr/bin/gaeul2-source-agent $OPTIONS
 Restart=on-failure
 
 [Install]
