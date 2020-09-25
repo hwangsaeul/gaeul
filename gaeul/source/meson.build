@@ -15,9 +15,17 @@ install_data([ source_setting ],
 source_schemas = gnome.compile_schemas(depend_files: source_setting)
 source_schemas_dir = meson.current_build_dir()
 
+# DBus
+dbus_sources = gnome.gdbus_codegen(
+  'source-generated',
+  sources: gaeul_fqdn_prefix + '.Source.xml',
+  interface_prefix: gaeul_fqdn_prefix,
+  namespace: 'Gaeul2DBus',
+)
+
 libgaeul_source = library(
   'gaeul-source-@0@'.format(apiversion),
-  source_c, source_schemas,
+  source_c, source_schemas, dbus_sources,
   version: libversion,
   soversion: soversion,
   include_directories: gaeul_incs,

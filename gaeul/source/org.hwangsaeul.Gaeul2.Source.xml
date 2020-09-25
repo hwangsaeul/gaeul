@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd" name="/">
+  <interface name="org.hwangsaeul.Gaeul2.Source">
+
+    <!--
+      ListChannels:
+      @ids: The list of source channel stream id
+      
+      List streaming channel ids.
+    -->
+    <method name="ListChannels">
+      <arg name="ids" type="as" direction="out"/>
+    </method>
+
+    <!--
+      GetStats:
+      @id: The channel stream id to request statistics
+      @packets_sent: The number of sent data packets, including retransmissions 
+      @packets_sent_lost: The number of lost packets (sender side)
+      @packets_retransmitted: The number of retransmitted packets
+      @packet_ack_received: The number of received ACK packets
+      @packet_nack_received: The number of received NAK packets
+      @send_duration_us: The time duration when UDT is sending data (idle time exclusive)
+      @bytes_sent: The number of sent data bytes, including retransmissions
+      @bytes_retransmitted: The number of retransmitted bytes
+      @bytes_sent_dropped: The number of too-late-to-send dropped bytes
+      @packets_sent_dropped: The number of too-late-to-send dropped packets
+      @send_rate_mbps: The sending rate in Mb/s
+      @negotiated_latency_ms: busy sending time (i.e., idle time exclusive)
+      @bandwidth_mbps: The estimated bandwidth, in Mb/s 
+      @rtt_ms: The calculated Round trip time in milliseconds
+    -->
+    <method name="GetStats">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="packets_sent" type="x" direction="out"/>
+      <arg name="packets_sent_lost" type="i" direction="out"/>
+      <arg name="packets_retransmitted" type="i" direction="out"/>
+      <arg name="packet_ack_received" type="i" direction="out"/>
+      <arg name="packet_nack_received" type="i" direction="out"/>
+      <arg name="send_duration_us" type="x" direction="out"/>
+      <arg name="bytes_sent" type="t" direction="out"/>
+      <arg name="bytes_retransmitted" type="t" direction="out"/>
+      <arg name="bytes_sent_dropped" type="t" direction="out"/>
+      <arg name="packets_sent_dropped" type="t" direction="out"/>
+      <arg name="send_rate_mbps" type="d" direction="out"/>
+      <arg name="negotiated_latency_ms" type="i" direction="out"/>
+      <arg name="bandwidth_mbps" type="d" direction="out"/>
+      <arg name="rtt_ms" type="d" direction="out"/>
+    </method>
+
+  </interface>
+</node>

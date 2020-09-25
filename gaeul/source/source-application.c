@@ -19,7 +19,8 @@
 #include "config.h"
 
 #include "gaeul.h"
-#include "source-application.h"
+#include "source/source-application.h"
+#include "source/source-generated.h"
 
 #include <gaeguli/gaeguli.h>
 
@@ -39,15 +40,17 @@ typedef struct _GaeguliNest
 {
   gint refcount;
 
+  gchar *id;
   GaeguliPipeline *pipeline;
   GaeguliTarget *target_stream;
 } GaeguliNest;
 
 static GaeguliNest *
-gaeguli_nest_new (GaeguliPipeline * pipeline)
+gaeguli_nest_new (const gchar * id, GaeguliPipeline * pipeline)
 {
   GaeguliNest *nest = g_new0 (GaeguliNest, 1);
 
+  nest->id = g_strdup (id);
   nest->refcount = 1;
   nest->pipeline = g_object_ref (pipeline);
 
@@ -58,6 +61,7 @@ static GaeguliNest *
 gaeguli_nest_ref (GaeguliNest * nest)
 {
   g_return_val_if_fail (nest != NULL, NULL);
+  g_return_val_if_fail (nest->id != NULL, NULL);
   g_return_val_if_fail (nest->pipeline != NULL, NULL);
 
   g_atomic_int_inc (&nest->refcount);
@@ -115,6 +119,7 @@ gaeguli_nest_unref (GaeguliNest * nest)
     gaeguli_nest_stop (nest);
 
     g_clear_object (&nest->pipeline);
+    g_clear_pointer (&nest->id, g_free);
     g_free (nest);
   }
 }
@@ -140,6 +145,7 @@ struct _GaeulSourceApplication
 
   GSettings *settings;
   gchar *tmpdir;
+  Gaeul2DBusSource *dbus_service;
 
   GList *gaegulis;
 };
@@ -244,7 +250,7 @@ gaeul_source_application_command_line (GApplication * app,
     pipeline =
         gaeguli_pipeline_new_full (video_source, device, encoding_method);
 
-    nest = gaeguli_nest_new (pipeline);
+    nest = gaeguli_nest_new (stream_id, pipeline);
 
     if (!gaeguli_nest_start (nest, stream_id, target_uri, video_codec,
             video_resolution, fps, bitrate)) {
@@ -326,6 +332,162 @@ gaeul_source_application_set_property (GObject * object,
   }
 }
 
+static gboolean
+gaeul_source_application_handle_list_channels (GaeulSourceApplication * self,
+    GDBusMethodInvocation * invocation)
+{
+  g_autoptr (GVariantBuilder) builder =
+      g_variant_builder_new (G_VARIANT_TYPE ("as"));
+  g_autoptr (GVariant) value = NULL;
+  const gchar **ids = NULL;
+  GList *l = NULL;
+
+  for (l = self->gaegulis; l != NULL; l = l->next) {
+    GaeguliNest *nest = l->data;
+    g_variant_builder_add (builder, "s", nest->id);
+  }
+  value = g_variant_new ("as", builder);
+  ids = g_variant_get_strv (value, NULL);
+
+  gaeul2_dbus_source_complete_list_channels (self->dbus_service, invocation,
+      ids);
+
+  g_free (ids);
+
+  return TRUE;
+}
+
+static gint
+_find_gaeguli_nest_by_id (gconstpointer a, gconstpointer b)
+{
+  const GaeguliNest *nest = a;
+  const gchar *id = b;
+
+  return g_strcmp0 (nest->id, id);
+}
+
+static gboolean
+gaeul_source_application_handle_get_stats (GaeulSourceApplication * self,
+    GDBusMethodInvocation * invocation, const gchar * id)
+{
+  GList *l = g_list_find_custom (self->gaegulis, id,
+      (GCompareFunc) _find_gaeguli_nest_by_id);
+
+  gint64 packets_sent = 0;
+  gint packets_sent_lost = 0;
+  gint packets_retransmitted = 0;
+  gint packet_ack_received = 0;
+  gint packet_nack_received = 0;
+  gint64 send_duration_us = 0;
+  guint64 bytes_sent = 0;
+  guint64 bytes_retransmitted = 0;
+  guint64 bytes_sent_dropped = 0;
+  guint64 packets_sent_dropped = 0;
+  gdouble send_rate_mbps = 0;
+  gint negotiated_latency_ms = 0;
+  gdouble bandwidth_mbps = 0;
+  gdouble rtt_ms = 0;
+
+  if (l != NULL) {
+    GaeguliNest *nest = l->data;
+
+    GVariantDict dict;
+    g_autoptr (GVariant) variant = NULL;
+
+    variant = gaeguli_target_get_stats (nest->target_stream);
+    g_variant_dict_init (&dict, variant);
+
+    g_variant_dict_lookup (&dict, "packets-sent", "x", &packets_sent);
+    g_variant_dict_lookup (&dict, "packets-sent-lost", "i", &packets_sent_lost);
+    g_variant_dict_lookup (&dict, "packets-retransmitted", "i",
+        &packets_retransmitted);
+    g_variant_dict_lookup (&dict, "packet-ack-received", "i",
+        &packet_ack_received);
+    g_variant_dict_lookup (&dict, "packet-nack-received", "i",
+        &packet_nack_received);
+    g_variant_dict_lookup (&dict, "send-duration-us", "x", &send_duration_us);
+    g_variant_dict_lookup (&dict, "bytes-sent", "t", &bytes_sent);
+    g_variant_dict_lookup (&dict, "bytes-retransmitted", "t",
+        &bytes_retransmitted);
+    g_variant_dict_lookup (&dict, "bytes-sent-dropped", "t",
+        &bytes_sent_dropped);
+    g_variant_dict_lookup (&dict, "packets-sent-dropped", "t",
+        &packets_sent_dropped);
+    g_variant_dict_lookup (&dict, "send-rate-mbps", "d", &send_rate_mbps);
+    g_variant_dict_lookup (&dict, "negotiated-latency-ms", "i",
+        &negotiated_latency_ms);
+    g_variant_dict_lookup (&dict, "bandwidth-mbps", "d", &bandwidth_mbps);
+    g_variant_dict_lookup (&dict, "rtt-ms", "d", &rtt_ms);
+
+    g_variant_dict_clear (&dict);
+
+  }
+
+  gaeul2_dbus_source_complete_get_stats (self->dbus_service,
+      invocation,
+      packets_sent,
+      packets_sent_lost,
+      packets_retransmitted,
+      packet_ack_received,
+      packet_nack_received,
+      send_duration_us,
+      bytes_sent,
+      bytes_retransmitted,
+      bytes_sent_dropped,
+      packets_sent_dropped,
+      send_rate_mbps, negotiated_latency_ms, bandwidth_mbps, rtt_ms);
+
+  return TRUE;
+}
+
+static gboolean
+gaeul_source_application_dbus_register (GApplication * app,
+    GDBusConnection * connection, const gchar * object_path, GError ** error)
+{
+  GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (app);
+
+  g_debug ("register dbus (%s)", object_path);
+  if (!self->dbus_service) {
+    self->dbus_service = gaeul2_dbus_source_skeleton_new ();
+
+    g_signal_connect_swapped (self->dbus_service, "handle-list-channels",
+        (GCallback) gaeul_source_application_handle_list_channels, self);
+    g_signal_connect_swapped (self->dbus_service, "handle-get-stats",
+        (GCallback) gaeul_source_application_handle_get_stats, self);
+  }
+
+  if (!G_APPLICATION_CLASS
+      (gaeul_source_application_parent_class)->dbus_register (app, connection,
+          object_path, error)) {
+    return FALSE;
+  }
+
+  if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON
+          (self->dbus_service), connection, object_path, error)) {
+    g_warning
+        ("Failed to export Gaeul2Source D-Bus interface (reason: %s)",
+        (*error)->message);
+  }
+
+  return TRUE;
+}
+
+static void
+gaeul_source_application_dbus_unregister (GApplication * app,
+    GDBusConnection * connection, const gchar * object_path)
+{
+  GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (app);
+
+  if (self->dbus_service) {
+    g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON
+        (self->dbus_service));
+    g_clear_object (&self->dbus_service);
+  }
+
+  G_APPLICATION_CLASS (gaeul_source_application_parent_class)->dbus_unregister
+      (app, connection, object_path);
+}
+
 static void
 gaeul_source_application_class_init (GaeulSourceApplicationClass * klass)
 {
@@ -346,6 +508,8 @@ gaeul_source_application_class_init (GaeulSourceApplicationClass * klass)
   app_class->command_line = gaeul_source_application_command_line;
   app_class->activate = gaeul_source_application_activate;
   app_class->shutdown = gaeul_source_application_shutdown;
+  app_class->dbus_register = gaeul_source_application_dbus_register;
+  app_class->dbus_unregister = gaeul_source_application_dbus_unregister;
 }
 
 static void
