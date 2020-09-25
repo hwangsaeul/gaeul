@@ -43,7 +43,7 @@ main (int argc, char **argv)
   g_autoptr (GOptionContext) context = NULL;
 
   const gchar *config = NULL;
-  const gchar *dbus_type = NULL;
+  const gchar *dbus_type = "none";
   GOptionEntry entries[] = {
     {"config", 'c', 0, G_OPTION_ARG_FILENAME, &config, NULL, NULL},
     {"dbus-type", 0, 0, G_OPTION_ARG_STRING, &dbus_type, NULL, NULL},
