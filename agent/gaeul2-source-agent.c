@@ -43,8 +43,10 @@ main (int argc, char **argv)
   g_autoptr (GOptionContext) context = NULL;
 
   const gchar *config = NULL;
+  const gchar *dbus_type = NULL;
   GOptionEntry entries[] = {
     {"config", 'c', 0, G_OPTION_ARG_FILENAME, &config, NULL, NULL},
+    {"dbus-type", 0, 0, G_OPTION_ARG_STRING, &dbus_type, NULL, NULL},
     {NULL}
   };
 
@@ -60,7 +62,8 @@ main (int argc, char **argv)
 
   app = G_APPLICATION (g_object_new (GAEUL_TYPE_SOURCE_APPLICATION,
           "application-id", GAEUL_SOURCE_APPLICATION_SCHEMA_ID,
-          "config-path", config, NULL));
+          "config-path", config, "dbus-type",
+          gaeul_application_dbus_type_get_by_name (dbus_type), NULL));
 
   g_unix_signal_add (SIGINT, (GSourceFunc) intr_handler, app);
 
