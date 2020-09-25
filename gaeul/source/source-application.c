@@ -43,6 +43,7 @@ typedef struct _GaeguliNest
   gchar *id;
   GaeguliPipeline *pipeline;
   GaeguliTarget *target_stream;
+  Gaeul2DBusSourceChannel *dbus;
 } GaeguliNest;
 
 static GaeguliNest *
@@ -67,6 +68,73 @@ gaeguli_nest_ref (GaeguliNest * nest)
   g_atomic_int_inc (&nest->refcount);
 
   return nest;
+}
+
+static void
+_on_target_property_change (GaeguliNest * nest, GParamSpec * pspec)
+{
+  GValue value = G_VALUE_INIT;
+
+  g_object_get_property (G_OBJECT (nest->target_stream), pspec->name, &value);
+  g_object_set_property (G_OBJECT (nest->dbus), pspec->name, &value);
+
+  g_value_unset (&value);
+}
+
+static void
+_on_dbus_property_change (GaeguliNest * nest, GParamSpec * pspec)
+{
+  GValue value = G_VALUE_INIT;
+
+  g_object_get_property (G_OBJECT (nest->dbus), pspec->name, &value);
+  g_object_set_property (G_OBJECT (nest->target_stream), pspec->name, &value);
+
+  g_value_unset (&value);
+}
+
+static void
+gaeguli_nest_dbus_register (GaeguliNest * nest, GDBusConnection * connection)
+{
+  g_autofree gchar *dbus_obj_path = NULL;
+  g_autoptr (GError) error = NULL;
+  GParamSpec **pspecs;
+  guint n_prop;
+  GValue value = G_VALUE_INIT;
+
+  nest->dbus = gaeul2_dbus_source_channel_skeleton_new ();
+
+  pspecs = g_object_class_list_properties (G_OBJECT_GET_CLASS (nest->dbus),
+      &n_prop);
+
+  while (n_prop-- > 0) {
+    const gchar *name = pspecs[n_prop]->name;
+
+    if (g_str_equal (name, "g-flags")) {
+      continue;
+    }
+
+    g_object_get_property (G_OBJECT (nest->target_stream), name, &value);
+    g_object_set_property (G_OBJECT (nest->dbus), name, &value);
+    g_value_unset (&value);
+  }
+
+  g_free (pspecs);
+
+  g_signal_connect_swapped (nest->target_stream, "notify",
+      G_CALLBACK (_on_target_property_change), nest);
+  g_signal_connect_swapped (nest->dbus, "notify::bitrate",
+      G_CALLBACK (_on_dbus_property_change), nest);
+  g_signal_connect_swapped (nest->dbus, "notify::quantizer",
+      G_CALLBACK (_on_dbus_property_change), nest);
+
+  dbus_obj_path = g_strdup_printf ("/org/hwangsaeul/Gaeul2/Source/channels/%s",
+      nest->id);
+
+  if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (nest->dbus),
+          connection, dbus_obj_path, &error)) {
+    g_warning ("Failed to export %s on D-Bus (reason: %s)", dbus_obj_path,
+        error->message);
+  }
 }
 
 static gboolean
@@ -103,6 +171,11 @@ gaeguli_nest_stop (GaeguliNest * nest)
     if (error != NULL) {
       g_warning ("%s", error->message);
     }
+  }
+
+  if (nest->dbus) {
+    g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (nest->dbus));
+    g_clear_object (&nest->dbus);
   }
 
   gaeguli_pipeline_stop (nest->pipeline);
@@ -177,6 +250,9 @@ gaeul_source_application_command_line (GApplication * app,
     GApplicationCommandLine * command_line)
 {
   GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (app);
+  GDBusConnection *dbus_connection =
+      g_dbus_interface_skeleton_get_connection
+      (G_DBUS_INTERFACE_SKELETON (self->dbus_service));
   g_autofree gchar *uid = NULL;
   GaeguliEncodingMethod encoding_method;
 
@@ -256,6 +332,7 @@ gaeul_source_application_command_line (GApplication * app,
             video_resolution, fps, bitrate)) {
       goto error;
     }
+    gaeguli_nest_dbus_register (nest, dbus_connection);
     self->gaegulis = g_list_prepend (self->gaegulis, gaeguli_nest_ref (nest));
   }
 

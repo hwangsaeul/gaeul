@@ -50,4 +50,11 @@
     </method>
 
   </interface>
+
+  <interface name="org.hwangsaeul.Gaeul2.Source.Channel">
+    <property name="Bitrate" type="u" access="readwrite"/>
+    <property name="BitrateActual" type="u" access="read"/>
+    <property name="Quantizer" type="u" access="readwrite"/>
+    <property name="QuantizerActual" type="u" access="read"/>
+  </interface>
 </node>
