@@ -463,9 +463,9 @@ gaeul_source_application_dbus_register (GApplication * app,
   }
 
   if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON
-          (self->dbus_service), connection, object_path, error)) {
-    g_warning
-        ("Failed to export Gaeul2Source D-Bus interface (reason: %s)",
+          (self->dbus_service), connection, "/org/hwangsaeul/Gaeul2/Source",
+          error)) {
+    g_warning ("Failed to export Gaeul2Source D-Bus interface (reason: %s)",
         (*error)->message);
   }
 
