@@ -1,7 +1,7 @@
 project('gaeul', 'c',
   version: '1.99.0',
   license: 'Apache-2.0',
-  meson_version: '>= 0.40',
+  meson_version: '>= 0.46.0',
   default_options: [ 'warning_level=1',
                      'buildtype=debugoptimized' ])
 
