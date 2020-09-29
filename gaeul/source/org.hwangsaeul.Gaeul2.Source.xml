@@ -5,12 +5,12 @@
 
     <!--
       ListChannels:
-      @ids: The list of source channel stream id
-      
-      List streaming channel ids.
+      @ids: The list of source channels' D-Bus object paths
+
+      List streaming channels.
     -->
     <method name="ListChannels">
-      <arg name="ids" type="as" direction="out"/>
+      <arg name="ids" type="ao" direction="out"/>
     </method>
 
     <!--

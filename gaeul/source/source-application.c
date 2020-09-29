@@ -419,23 +419,24 @@ static gboolean
 gaeul_source_application_handle_list_channels (GaeulSourceApplication * self,
     GDBusMethodInvocation * invocation)
 {
-  g_autoptr (GVariantBuilder) builder =
-      g_variant_builder_new (G_VARIANT_TYPE ("as"));
-  g_autoptr (GVariant) value = NULL;
-  const gchar **ids = NULL;
+  g_autofree const gchar **paths = NULL;
+  const gchar **path;
   GList *l = NULL;
+
+  paths = g_new0 (const gchar *, g_list_length (self->gaegulis) + 1);
+  path = paths;
 
   for (l = self->gaegulis; l != NULL; l = l->next) {
     GaeguliNest *nest = l->data;
-    g_variant_builder_add (builder, "s", nest->id);
+
+    if (nest->dbus) {
+      *path++ = g_dbus_interface_skeleton_get_object_path
+          (G_DBUS_INTERFACE_SKELETON (nest->dbus));
+    }
   }
-  value = g_variant_new ("as", builder);
-  ids = g_variant_get_strv (value, NULL);
 
   gaeul2_dbus_source_complete_list_channels (self->dbus_service, invocation,
-      ids);
-
-  g_free (ids);
+      paths);
 
   return TRUE;
 }
