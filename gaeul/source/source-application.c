@@ -250,10 +250,9 @@ gaeul_source_application_command_line (GApplication * app,
     GApplicationCommandLine * command_line)
 {
   GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (app);
-  GDBusConnection *dbus_connection =
-      g_dbus_interface_skeleton_get_connection
-      (G_DBUS_INTERFACE_SKELETON (self->dbus_service));
+  g_autoptr (GDBusConnection) dbus_connection = NULL;
   g_autofree gchar *uid = NULL;
+  GaeulApplicationDBusType bus_type;
   GaeguliEncodingMethod encoding_method;
 
   g_auto (GStrv) channel_configs = NULL;
@@ -277,6 +276,11 @@ gaeul_source_application_command_line (GApplication * app,
 
   g_object_get (GAEUL_APPLICATION (self), "uid", &uid, NULL);
   encoding_method = (0x7fff & g_settings_get_enum (self->settings, "platform"));
+
+  g_object_get (self, "dbus-type", &bus_type, NULL);
+  if (bus_type != GAEUL_APPLICATION_DBUS_TYPE_NONE) {
+    dbus_connection = g_bus_get_sync (bus_type, NULL, NULL);
+  }
 
   channel_configs = g_settings_get_strv (self->settings, "channel-configs");
 
@@ -332,7 +336,9 @@ gaeul_source_application_command_line (GApplication * app,
             video_resolution, fps, bitrate)) {
       goto error;
     }
-    gaeguli_nest_dbus_register (nest, dbus_connection);
+    if (dbus_connection) {
+      gaeguli_nest_dbus_register (nest, dbus_connection);
+    }
     self->gaegulis = g_list_prepend (self->gaegulis, gaeguli_nest_ref (nest));
   }
 
