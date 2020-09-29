@@ -53,5 +53,6 @@
     <property name="BitrateActual" type="u" access="read"/>
     <property name="Quantizer" type="u" access="readwrite"/>
     <property name="QuantizerActual" type="u" access="read"/>
+    <property name="AdaptiveStreaming" type="b" access="readwrite"/>
   </interface>
 </node>

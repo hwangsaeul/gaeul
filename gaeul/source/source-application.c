@@ -129,6 +129,8 @@ gaeguli_nest_dbus_register (GaeguliNest * nest, GDBusConnection * connection)
       G_CALLBACK (_on_dbus_property_change), nest);
   g_signal_connect_swapped (nest->dbus, "notify::quantizer",
       G_CALLBACK (_on_dbus_property_change), nest);
+  g_signal_connect_swapped (nest->dbus, "notify::adaptive-streaming",
+      G_CALLBACK (_on_dbus_property_change), nest);
 
   g_signal_connect_swapped (nest->dbus, "handle-get-stats",
       (GCallback) _channel_handle_get_stats, nest);
