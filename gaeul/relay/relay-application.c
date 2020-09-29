@@ -189,6 +189,9 @@ gaeul_relay_application_handle_add_sink_token (GaeulRelayApplication * self,
 {
   gaeul_stream_authenticator_add_sink_token (self->auth, username);
   gaeul2_dbus_relay_complete_add_sink_token (self->dbus_service, invocation);
+
+  g_info ("a sink token (%s) is added", username);
+
   return TRUE;
 }
 
@@ -199,6 +202,9 @@ gaeul_relay_application_handle_add_source_token (GaeulRelayApplication * self,
 {
   gaeul_stream_authenticator_add_source_token (self->auth, username, resource);
   gaeul2_dbus_relay_complete_add_source_token (self->dbus_service, invocation);
+
+  g_info ("a pair of tokens (%s,%s) is added", username, resource);
+
   return TRUE;
 }
 
@@ -208,6 +214,9 @@ gaeul_relay_application_handle_remove_sink_token (GaeulRelayApplication * self,
 {
   gaeul_stream_authenticator_remove_sink_token (self->auth, username);
   gaeul2_dbus_relay_complete_remove_sink_token (self->dbus_service, invocation);
+
+  g_info ("a sink token (%s) is added", username);
+
   return TRUE;
 }
 
@@ -220,6 +229,9 @@ gaeul_relay_application_handle_remove_source_token (GaeulRelayApplication *
       resource);
   gaeul2_dbus_relay_complete_remove_source_token (self->dbus_service,
       invocation);
+
+  g_info ("a pair of tokens (%s,%s) is removed", username, resource);
+
   return TRUE;
 }
 
