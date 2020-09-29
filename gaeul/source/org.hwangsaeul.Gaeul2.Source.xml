@@ -12,10 +12,11 @@
     <method name="ListChannels">
       <arg name="ids" type="ao" direction="out"/>
     </method>
+  </interface>
 
-    <!--
+  <interface name="org.hwangsaeul.Gaeul2.Source.Channel">
+      <!--
       GetStats:
-      @id: The channel stream id to request statistics
       @packets_sent: The number of sent data packets, including retransmissions 
       @packets_sent_lost: The number of lost packets (sender side)
       @packets_retransmitted: The number of retransmitted packets
@@ -32,7 +33,6 @@
       @rtt_ms: The calculated Round trip time in milliseconds
     -->
     <method name="GetStats">
-      <arg name="id" type="s" direction="in"/>
       <arg name="packets_sent" type="x" direction="out"/>
       <arg name="packets_sent_lost" type="i" direction="out"/>
       <arg name="packets_retransmitted" type="i" direction="out"/>
@@ -49,9 +49,6 @@
       <arg name="rtt_ms" type="d" direction="out"/>
     </method>
 
-  </interface>
-
-  <interface name="org.hwangsaeul.Gaeul2.Source.Channel">
     <property name="Bitrate" type="u" access="readwrite"/>
     <property name="BitrateActual" type="u" access="read"/>
     <property name="Quantizer" type="u" access="readwrite"/>

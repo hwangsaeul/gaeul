@@ -46,6 +46,9 @@ typedef struct _GaeguliNest
   Gaeul2DBusSourceChannel *dbus;
 } GaeguliNest;
 
+static gboolean _channel_handle_get_stats (GaeguliNest * nest,
+    GDBusMethodInvocation * invocation);
+
 static GaeguliNest *
 gaeguli_nest_new (const gchar * id, GaeguliPipeline * pipeline)
 {
@@ -126,6 +129,9 @@ gaeguli_nest_dbus_register (GaeguliNest * nest, GDBusConnection * connection)
       G_CALLBACK (_on_dbus_property_change), nest);
   g_signal_connect_swapped (nest->dbus, "notify::quantizer",
       G_CALLBACK (_on_dbus_property_change), nest);
+
+  g_signal_connect_swapped (nest->dbus, "handle-get-stats",
+      (GCallback) _channel_handle_get_stats, nest);
 
   dbus_obj_path = g_strdup_printf ("/org/hwangsaeul/Gaeul2/Source/channels/%s",
       nest->id);
@@ -441,22 +447,10 @@ gaeul_source_application_handle_list_channels (GaeulSourceApplication * self,
   return TRUE;
 }
 
-static gint
-_find_gaeguli_nest_by_id (gconstpointer a, gconstpointer b)
-{
-  const GaeguliNest *nest = a;
-  const gchar *id = b;
-
-  return g_strcmp0 (nest->id, id);
-}
-
 static gboolean
-gaeul_source_application_handle_get_stats (GaeulSourceApplication * self,
-    GDBusMethodInvocation * invocation, const gchar * id)
+_channel_handle_get_stats (GaeguliNest * nest,
+    GDBusMethodInvocation * invocation)
 {
-  GList *l = g_list_find_custom (self->gaegulis, id,
-      (GCompareFunc) _find_gaeguli_nest_by_id);
-
   gint64 packets_sent = 0;
   gint packets_sent_lost = 0;
   gint packets_retransmitted = 0;
@@ -472,42 +466,36 @@ gaeul_source_application_handle_get_stats (GaeulSourceApplication * self,
   gdouble bandwidth_mbps = 0;
   gdouble rtt_ms = 0;
 
-  if (l != NULL) {
-    GaeguliNest *nest = l->data;
+  GVariantDict dict;
+  g_autoptr (GVariant) variant = NULL;
 
-    GVariantDict dict;
-    g_autoptr (GVariant) variant = NULL;
+  variant = gaeguli_target_get_stats (nest->target_stream);
+  g_variant_dict_init (&dict, variant);
 
-    variant = gaeguli_target_get_stats (nest->target_stream);
-    g_variant_dict_init (&dict, variant);
+  g_variant_dict_lookup (&dict, "packets-sent", "x", &packets_sent);
+  g_variant_dict_lookup (&dict, "packets-sent-lost", "i", &packets_sent_lost);
+  g_variant_dict_lookup (&dict, "packets-retransmitted", "i",
+      &packets_retransmitted);
+  g_variant_dict_lookup (&dict, "packet-ack-received", "i",
+      &packet_ack_received);
+  g_variant_dict_lookup (&dict, "packet-nack-received", "i",
+      &packet_nack_received);
+  g_variant_dict_lookup (&dict, "send-duration-us", "x", &send_duration_us);
+  g_variant_dict_lookup (&dict, "bytes-sent", "t", &bytes_sent);
+  g_variant_dict_lookup (&dict, "bytes-retransmitted", "t",
+      &bytes_retransmitted);
+  g_variant_dict_lookup (&dict, "bytes-sent-dropped", "t", &bytes_sent_dropped);
+  g_variant_dict_lookup (&dict, "packets-sent-dropped", "t",
+      &packets_sent_dropped);
+  g_variant_dict_lookup (&dict, "send-rate-mbps", "d", &send_rate_mbps);
+  g_variant_dict_lookup (&dict, "negotiated-latency-ms", "i",
+      &negotiated_latency_ms);
+  g_variant_dict_lookup (&dict, "bandwidth-mbps", "d", &bandwidth_mbps);
+  g_variant_dict_lookup (&dict, "rtt-ms", "d", &rtt_ms);
 
-    g_variant_dict_lookup (&dict, "packets-sent", "x", &packets_sent);
-    g_variant_dict_lookup (&dict, "packets-sent-lost", "i", &packets_sent_lost);
-    g_variant_dict_lookup (&dict, "packets-retransmitted", "i",
-        &packets_retransmitted);
-    g_variant_dict_lookup (&dict, "packet-ack-received", "i",
-        &packet_ack_received);
-    g_variant_dict_lookup (&dict, "packet-nack-received", "i",
-        &packet_nack_received);
-    g_variant_dict_lookup (&dict, "send-duration-us", "x", &send_duration_us);
-    g_variant_dict_lookup (&dict, "bytes-sent", "t", &bytes_sent);
-    g_variant_dict_lookup (&dict, "bytes-retransmitted", "t",
-        &bytes_retransmitted);
-    g_variant_dict_lookup (&dict, "bytes-sent-dropped", "t",
-        &bytes_sent_dropped);
-    g_variant_dict_lookup (&dict, "packets-sent-dropped", "t",
-        &packets_sent_dropped);
-    g_variant_dict_lookup (&dict, "send-rate-mbps", "d", &send_rate_mbps);
-    g_variant_dict_lookup (&dict, "negotiated-latency-ms", "i",
-        &negotiated_latency_ms);
-    g_variant_dict_lookup (&dict, "bandwidth-mbps", "d", &bandwidth_mbps);
-    g_variant_dict_lookup (&dict, "rtt-ms", "d", &rtt_ms);
+  g_variant_dict_clear (&dict);
 
-    g_variant_dict_clear (&dict);
-
-  }
-
-  gaeul2_dbus_source_complete_get_stats (self->dbus_service,
+  gaeul2_dbus_source_channel_complete_get_stats (nest->dbus,
       invocation,
       packets_sent,
       packets_sent_lost,
@@ -536,8 +524,6 @@ gaeul_source_application_dbus_register (GApplication * app,
 
     g_signal_connect_swapped (self->dbus_service, "handle-list-channels",
         (GCallback) gaeul_source_application_handle_list_channels, self);
-    g_signal_connect_swapped (self->dbus_service, "handle-get-stats",
-        (GCallback) gaeul_source_application_handle_get_stats, self);
   }
 
   if (!G_APPLICATION_CLASS
