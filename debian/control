@@ -35,6 +35,7 @@ Description: A dummy agent package for Gaeul agents
 Package: gaeul2-mjpeg-agent
 Architecture: any
 Depends:
+ gaeul2-agent,
  libgaeul2-mjpeg (= ${binary:Version}),
  ${misc:Depends},
  ${shlibs:Depends},
@@ -45,6 +46,7 @@ Description: A Reference Application for Transcoding
 Package: gaeul2-relay-agent
 Architecture: any
 Depends:
+ gaeul2-agent,
  libgaeul2-relay (= ${binary:Version}),
  libhwangsae2,
  ${misc:Depends},
@@ -56,6 +58,7 @@ Description: A Reference Application for SRT Edge
 Package: gaeul2-source-agent
 Architecture: any
 Depends:
+ gaeul2-agent,
  libgaeul2-source (= ${binary:Version}),
  ${misc:Depends},
  ${shlibs:Depends},
