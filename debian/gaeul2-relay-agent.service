@@ -1,0 +1,12 @@
+[Unit]
+Description=Relay for H8L
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/gaeul2-relay-agent
+User=gaeul
+ExecStart=/usr/bin/gaeul2-relay-agent $OPTIONS
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
