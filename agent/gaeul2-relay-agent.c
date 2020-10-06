@@ -43,8 +43,10 @@ main (int argc, char **argv)
   g_autofree gchar *app_id = NULL;
 
   const gchar *config = NULL;
+  const gchar *dbus_type = "none";
   GOptionEntry entries[] = {
     {"config", 'c', 0, G_OPTION_ARG_FILENAME, &config, NULL, NULL},
+    {"dbus-type", 0, 0, G_OPTION_ARG_STRING, &dbus_type, NULL, NULL},
     {NULL}
   };
 
@@ -58,10 +60,16 @@ main (int argc, char **argv)
     return -1;
   }
 
-  app_id = g_strdup_printf (GAEUL_RELAY_APPLICATION_SCHEMA_ID "_%d", getpid ());
+  if (g_strcmp0 (dbus_type, "system") == 0) {
+    app_id = g_strdup (GAEUL_RELAY_APPLICATION_SCHEMA_ID);
+  } else {
+    app_id =
+        g_strdup_printf (GAEUL_RELAY_APPLICATION_SCHEMA_ID "_%d", getpid ());
+  }
 
   app = G_APPLICATION (g_object_new (GAEUL_TYPE_RELAY_APPLICATION,
-          "application-id", app_id, "config-path", config, NULL));
+          "application-id", app_id, "config-path", config, "dbus-type",
+          gaeul_application_dbus_type_get_by_name (dbus_type), NULL));
 
   g_unix_signal_add (SIGINT, (GSourceFunc) intr_handler, app);
 

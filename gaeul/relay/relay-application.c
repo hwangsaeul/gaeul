@@ -271,6 +271,8 @@ gaeul_relay_application_dbus_register (GApplication * app,
 {
   GaeulRelayApplication *self = GAEUL_RELAY_APPLICATION (app);
 
+  g_debug ("registering D-Bus (%s)", object_path);
+
   if (!self->dbus_service) {
     self->dbus_service = gaeul2_dbus_relay_skeleton_new ();
 
@@ -295,7 +297,7 @@ gaeul_relay_application_dbus_register (GApplication * app,
 
   return
       g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON
-      (self->dbus_service), connection, object_path, error);
+      (self->dbus_service), connection, "/org/hwangsaeul/Gaeul2/Relay", error);
 }
 
 static void
