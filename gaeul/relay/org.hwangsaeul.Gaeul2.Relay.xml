@@ -58,5 +58,15 @@
     <method name="ListSinkTokens">
       <arg name="tokens" type="a(si)" direction="out"/>
     </method>
+
+    <!--
+      ListSourceTokens:
+      @tokens: array of pairs of source and sink identifier
+
+      Enumerates source and sink resource identifier with its status.
+    -->
+    <method name="ListSourceTokens">
+      <arg name="tokens" type="a(ssi)" direction="out"/>
+    </method>
   </interface>
 </node>

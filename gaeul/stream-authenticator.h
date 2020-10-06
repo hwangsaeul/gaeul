@@ -50,6 +50,9 @@ void                      gaeul_stream_authenticator_remove_source_token
 GVariant                 *gaeul_stream_authenticator_list_sink_tokens
                                                         (GaeulStreamAuthenticator *authenticator);
 
+GVariant                 *gaeul_stream_authenticator_list_source_tokens
+                                                        (GaeulStreamAuthenticator *authenticator);
+
 G_END_DECLS
 
 #endif // __GAEUL_STREAM_AUTHENTICATOR_H__

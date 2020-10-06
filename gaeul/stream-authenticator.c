@@ -144,6 +144,37 @@ gaeul_stream_authenticator_list_sink_tokens (GaeulStreamAuthenticator * self)
   return g_variant_builder_end (&builder);
 }
 
+GVariant *
+gaeul_stream_authenticator_list_source_tokens (GaeulStreamAuthenticator * self)
+{
+  GVariantBuilder builder;
+  GSequenceIter *seq_itr;
+
+  g_return_val_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self), NULL);
+
+  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ssi)"));
+
+  seq_itr = g_sequence_get_begin_iter (self->source_tokens);
+
+  while (seq_itr != g_sequence_get_end_iter (self->source_tokens)) {
+    const gchar *token_str = g_sequence_get (seq_itr);
+    g_auto (GStrv) tokens = g_strsplit (token_str, ":", -1);
+
+    g_variant_builder_open (&builder, G_VARIANT_TYPE ("(ssi)"));
+    g_variant_builder_add (&builder, "s", g_strdup (tokens[0]));
+    g_variant_builder_add (&builder, "s", g_strdup (tokens[1]));
+    /* TODO: it should be extracted from actual status. */
+    g_variant_builder_add (&builder, "i", 0);
+
+    g_variant_builder_close (&builder);
+
+    seq_itr = g_sequence_iter_next (seq_itr);
+  }
+
+  return g_variant_builder_end (&builder);
+}
+
+
 static gboolean
 gaeul_stream_authenticator_on_authenticate (GaeulStreamAuthenticator * self,
     HwangsaeCallerDirection direction, GSocketAddress * addr,
