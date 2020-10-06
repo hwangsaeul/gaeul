@@ -48,5 +48,15 @@
       <arg name="username" type="s" direction="in"/>
       <arg name="resource" type="s" direction="in"/>
     </method>
+
+    <!--
+      ListSinkTokens:
+      @tokens: array of sink usernames
+
+      Enumerates sink usernames that are allowed connection with its status.
+    -->
+    <method name="ListSinkTokens">
+      <arg name="tokens" type="a(si)" direction="out"/>
+    </method>
   </interface>
 </node>

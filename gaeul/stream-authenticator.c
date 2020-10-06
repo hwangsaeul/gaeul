@@ -116,6 +116,34 @@ gaeul_stream_authenticator_remove_source_token (GaeulStreamAuthenticator * self,
   }
 }
 
+GVariant *
+gaeul_stream_authenticator_list_sink_tokens (GaeulStreamAuthenticator * self)
+{
+  GVariantBuilder builder;
+  GSequenceIter *seq_itr;
+
+  g_return_val_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self), NULL);
+
+  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(si)"));
+
+  seq_itr = g_sequence_get_begin_iter (self->sink_tokens);
+
+  while (seq_itr != g_sequence_get_end_iter (self->sink_tokens)) {
+    const gchar *token = g_sequence_get (seq_itr);
+
+    g_variant_builder_open (&builder, G_VARIANT_TYPE ("(si)"));
+    g_variant_builder_add (&builder, "s", g_strdup (token));
+    /* TODO: it should be extracted from actual status. */
+    g_variant_builder_add (&builder, "i", 0);
+
+    g_variant_builder_close (&builder);
+
+    seq_itr = g_sequence_iter_next (seq_itr);
+  }
+
+  return g_variant_builder_end (&builder);
+}
+
 static gboolean
 gaeul_stream_authenticator_on_authenticate (GaeulStreamAuthenticator * self,
     HwangsaeCallerDirection direction, GSocketAddress * addr,

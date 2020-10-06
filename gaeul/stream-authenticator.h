@@ -47,6 +47,9 @@ void                      gaeul_stream_authenticator_remove_source_token
                                                          const gchar              *username,
                                                          const gchar              *resource);
 
+GVariant                 *gaeul_stream_authenticator_list_sink_tokens
+                                                        (GaeulStreamAuthenticator *authenticator);
+
 G_END_DECLS
 
 #endif // __GAEUL_STREAM_AUTHENTICATOR_H__

@@ -236,6 +236,20 @@ gaeul_relay_application_handle_remove_source_token (GaeulRelayApplication *
 }
 
 static gboolean
+gaeul_relay_application_handle_list_sink_tokens (GaeulRelayApplication *
+    self, GDBusMethodInvocation * invocation)
+{
+  GVariant *tokens = NULL;
+
+  tokens = gaeul_stream_authenticator_list_sink_tokens (self->auth);
+
+  gaeul2_dbus_relay_complete_list_sink_tokens (self->dbus_service,
+      invocation, tokens);
+
+  return TRUE;
+}
+
+static gboolean
 gaeul_relay_application_dbus_register (GApplication * app,
     GDBusConnection * connection, const gchar * object_path, GError ** error)
 {
@@ -252,6 +266,8 @@ gaeul_relay_application_dbus_register (GApplication * app,
         (GCallback) gaeul_relay_application_handle_remove_sink_token, self);
     g_signal_connect_swapped (self->dbus_service, "handle-remove-source-token",
         (GCallback) gaeul_relay_application_handle_remove_source_token, self);
+    g_signal_connect_swapped (self->dbus_service, "handle-list-sink-tokens",
+        (GCallback) gaeul_relay_application_handle_list_sink_tokens, self);
   }
 
   if (!G_APPLICATION_CLASS (gaeul_relay_application_parent_class)->dbus_register
