@@ -1,2 +1,3 @@
 usr/lib/*/libgaeul-relay-2.0.so*
+usr/share/dbus-1/*/org.hwangsaeul.Gaeul2.Relay.*
 usr/share/glib-2.0/schemas/org.hwangsaeul.Gaeul2.Relay.gschema.xml

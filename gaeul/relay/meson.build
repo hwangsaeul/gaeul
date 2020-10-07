@@ -38,3 +38,8 @@ libgaeul_relay_dep = declare_dependency (link_with: libgaeul_relay,
   include_directories: [ gaeul_incs ],
   dependencies: [ gaeguli_dep ]
 )
+
+install_data(
+  'org.hwangsaeul.Gaeul2.Relay.conf',
+  install_dir : join_paths(get_option('datadir'), 'dbus-1', 'system.d')
+)
