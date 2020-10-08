@@ -49,6 +49,16 @@
       <arg name="rtt_ms" type="d" direction="out"/>
     </method>
 
+    <!--
+     BitrateControl:
+     Requested type of bitrate control. Allowed values: "cbr", "vbr", "cqp".
+    -->
+    <property name="BitrateControl" type="s" access="readwrite"/>
+    <!--
+     BitrateControlActual:
+     Bitrate control actually in use by the channel's encoder.
+    -->
+    <property name="BitrateControlActual" type="s" access="read"/>
     <property name="Bitrate" type="u" access="readwrite"/>
     <property name="BitrateActual" type="u" access="read"/>
     <property name="Quantizer" type="u" access="readwrite"/>

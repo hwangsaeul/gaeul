@@ -79,6 +79,19 @@ _on_target_property_change (GaeguliNest * nest, GParamSpec * pspec)
   GValue value = G_VALUE_INIT;
 
   g_object_get_property (G_OBJECT (nest->target_stream), pspec->name, &value);
+
+  if (G_TYPE_IS_ENUM (pspec->value_type)) {
+    g_autoptr (GEnumClass) enum_class;
+    GEnumValue *enum_value;
+
+    enum_class = g_type_class_ref (pspec->value_type);
+    enum_value = g_enum_get_value (enum_class, g_value_get_enum (&value));
+
+    g_value_unset (&value);
+    g_value_init (&value, G_TYPE_STRING);
+    g_value_set_string (&value, enum_value->value_nick);
+  }
+
   g_object_set_property (G_OBJECT (nest->dbus), pspec->name, &value);
 
   g_value_unset (&value);
@@ -87,11 +100,46 @@ _on_target_property_change (GaeguliNest * nest, GParamSpec * pspec)
 static void
 _on_dbus_property_change (GaeguliNest * nest, GParamSpec * pspec)
 {
+  GParamSpec *target_pspec;
   GValue value = G_VALUE_INIT;
 
+  target_pspec = g_object_class_find_property
+      (G_OBJECT_GET_CLASS (nest->target_stream), pspec->name);
+
+  if (!target_pspec) {
+    g_warning ("Unknown target stream property '%s'", pspec->name);
+    return;
+  }
+
   g_object_get_property (G_OBJECT (nest->dbus), pspec->name, &value);
+
+  if (G_TYPE_IS_ENUM (target_pspec->value_type)) {
+    g_autoptr (GEnumClass) enum_class;
+    GEnumValue *enum_value;
+    const gchar *str_val;
+
+    str_val = g_value_get_string (&value);
+    if (!str_val) {
+      g_warning ("No value for '%s'", g_type_name (target_pspec->value_type));
+      goto out;
+    }
+
+    enum_class = g_type_class_ref (target_pspec->value_type);
+    enum_value = g_enum_get_value_by_nick (enum_class, str_val);
+    if (!enum_value) {
+      g_warning ("Invalid value '%s' for '%s'", str_val,
+          g_type_name (target_pspec->value_type));
+      goto out;
+    }
+
+    g_value_unset (&value);
+    g_value_init (&value, target_pspec->value_type);
+    g_value_set_enum (&value, enum_value->value);
+  }
+
   g_object_set_property (G_OBJECT (nest->target_stream), pspec->name, &value);
 
+out:
   g_value_unset (&value);
 }
 
@@ -102,7 +150,6 @@ gaeguli_nest_dbus_register (GaeguliNest * nest, GDBusConnection * connection)
   g_autoptr (GError) error = NULL;
   GParamSpec **pspecs;
   guint n_prop;
-  GValue value = G_VALUE_INIT;
 
   nest->dbus = gaeul2_dbus_source_channel_skeleton_new ();
 
@@ -110,21 +157,22 @@ gaeguli_nest_dbus_register (GaeguliNest * nest, GDBusConnection * connection)
       &n_prop);
 
   while (n_prop-- > 0) {
-    const gchar *name = pspecs[n_prop]->name;
+    GParamSpec *pspec = pspecs[n_prop];
 
-    if (g_str_equal (name, "g-flags")) {
+    if (g_str_equal (pspec->name, "g-flags")) {
       continue;
     }
 
-    g_object_get_property (G_OBJECT (nest->target_stream), name, &value);
-    g_object_set_property (G_OBJECT (nest->dbus), name, &value);
-    g_value_unset (&value);
+    _on_target_property_change (nest, g_object_class_find_property
+        (G_OBJECT_GET_CLASS (nest->target_stream), pspec->name));
   }
 
   g_free (pspecs);
 
   g_signal_connect_swapped (nest->target_stream, "notify",
       G_CALLBACK (_on_target_property_change), nest);
+  g_signal_connect_swapped (nest->dbus, "notify::bitrate-control",
+      G_CALLBACK (_on_dbus_property_change), nest);
   g_signal_connect_swapped (nest->dbus, "notify::bitrate",
       G_CALLBACK (_on_dbus_property_change), nest);
   g_signal_connect_swapped (nest->dbus, "notify::quantizer",
