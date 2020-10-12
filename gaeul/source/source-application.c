@@ -309,7 +309,6 @@ gaeul_source_application_command_line (GApplication * app,
   g_autoptr (GDBusConnection) dbus_connection = NULL;
   g_autofree gchar *uid = NULL;
   GaeulApplicationDBusType bus_type;
-  GaeguliEncodingMethod encoding_method;
 
   g_auto (GStrv) channel_configs = NULL;
   guint i;
@@ -331,7 +330,6 @@ gaeul_source_application_command_line (GApplication * app,
   }
 
   g_object_get (GAEUL_APPLICATION (self), "uid", &uid, NULL);
-  encoding_method = (0x7fff & g_settings_get_enum (self->settings, "platform"));
 
   g_object_get (self, "dbus-type", &bus_type, NULL);
   if (bus_type != GAEUL_APPLICATION_DBUS_TYPE_NONE) {
@@ -383,8 +381,7 @@ gaeul_source_application_command_line (GApplication * app,
 
     stream_id = g_strconcat (uid, "_", name, NULL);
 
-    pipeline =
-        gaeguli_pipeline_new_full (video_source, device, encoding_method);
+    pipeline = gaeguli_pipeline_new_full (video_source, device);
 
     nest = gaeguli_nest_new (stream_id, pipeline);
 

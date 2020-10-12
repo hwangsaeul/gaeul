@@ -1,18 +1,9 @@
 <?xml version="1.0"?>
 <schemalist>
 
-  <enum id="org.hwangsaeul.Gaeguli.EncodingMethod">
-    <value nick="general" value="0x0001"/>
-    <value nick="nvidia" value="0x0002"/>
-    <value nick="intel" value="0x8001"/>
-  </enum>
-
   <schema id="org.hwangsaeul.Gaeul2.Source" path="/org/hwangsaeul/Gaeul2/Source/">
     <key name="uid" type="s">
       <default>"randomized-string"</default>
-    </key>
-    <key name="platform" enum="org.hwangsaeul.Gaeguli.EncodingMethod">
-      <default>"intel"</default>
     </key>
     <key name="tmpdir" type="s">
       <default>"/tmp/gaeul2"</default>
@@ -33,8 +24,12 @@
   </enum>
 
   <enum id="org.hwangsaeul.Gaeguli.VideoCodec">
-    <value nick="h264" value="1"/>
-    <value nick="h265" value="2"/>
+    <value nick="x264" value="1"/>
+    <value nick="vaapih264" value="2"/>
+    <value nick="omxh264" value="3"/>
+    <value nick="x265" value="4"/>
+    <value nick="vaapih265" value="5"/>
+    <value nick="omxh265" value="6"/>
   </enum>
 
   <enum id="org.hwangsaeul.Gaeguli.VideoSource">
@@ -68,7 +63,7 @@
       <default>15</default>
     </key>
     <key name="codec" enum="org.hwangsaeul.Gaeguli.VideoCodec">
-      <default>"h264"</default>
+      <default>"x264"</default>
     </key>
     <key name="bitrate-control" enum="org.hwangsaeul.Gaeguli.BitrateControl">
       <default>"CBR"</default>
