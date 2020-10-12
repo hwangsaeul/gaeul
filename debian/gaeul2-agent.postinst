@@ -5,6 +5,8 @@ set -e
 adduser --quiet --system --group --home /var/lib/hwangsaeul/gaeul \
     --gecos "Gaeul2 streaming daemon" gaeul
 
+usermod -aG video gaeul
+
 if ! which udevadm >/dev/null 2>&1 ; then
   return 0;
 fi
