@@ -211,6 +211,12 @@ gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
     return FALSE;
   }
 
+  gaeguli_target_start (nest->target_stream, &error);
+  if (error) {
+    g_debug ("Failed to start srt target (reason: %s)", error->message);
+    return FALSE;
+  }
+
   return TRUE;
 }
 
