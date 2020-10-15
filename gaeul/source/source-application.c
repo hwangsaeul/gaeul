@@ -195,16 +195,15 @@ gaeguli_nest_dbus_register (GaeguliNest * nest, GDBusConnection * connection)
 
 static gboolean
 gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
-    const gchar * uri, GaeguliVideoCodec codec,
-    GaeguliVideoResolution resolution, guint fps, guint bitrates)
+    const gchar * uri, GaeguliVideoCodec codec, guint bitrate)
 {
   g_autoptr (GError) error = NULL;
 
   g_return_val_if_fail (nest->target_stream == NULL, FALSE);
 
   nest->target_stream =
-      gaeguli_pipeline_add_srt_target_full (nest->pipeline, codec, resolution,
-      fps, bitrates, uri, stream_id, &error);
+      gaeguli_pipeline_add_srt_target_full (nest->pipeline, codec, bitrate, uri,
+      stream_id, &error);
 
   if (!nest->target_stream) {
     g_debug ("Failed to add srt target to pipeline (reason: %s)",
@@ -381,12 +380,12 @@ gaeul_source_application_command_line (GApplication * app,
 
     stream_id = g_strconcat (uid, "_", name, NULL);
 
-    pipeline = gaeguli_pipeline_new_full (video_source, device);
+    pipeline = gaeguli_pipeline_new_full (video_source, device,
+        video_resolution, fps);
 
     nest = gaeguli_nest_new (stream_id, pipeline);
 
-    if (!gaeguli_nest_start (nest, stream_id, target_uri, video_codec,
-            video_resolution, fps, bitrate)) {
+    if (!gaeguli_nest_start (nest, stream_id, target_uri, video_codec, bitrate)) {
       goto error;
     }
     if (dbus_connection) {
