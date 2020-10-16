@@ -114,7 +114,7 @@ _on_dbus_property_change (GaeguliNest * nest, GParamSpec * pspec)
   g_object_get_property (G_OBJECT (nest->dbus), pspec->name, &value);
 
   if (G_TYPE_IS_ENUM (target_pspec->value_type)) {
-    g_autoptr (GEnumClass) enum_class;
+    g_autoptr (GEnumClass) enum_class = NULL;
     GEnumValue *enum_value;
     const gchar *str_val;
 
