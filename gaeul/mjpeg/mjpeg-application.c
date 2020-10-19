@@ -158,6 +158,12 @@ gaeul_mjpeg_http_request_cb (SoupServer * server, SoupMessage * msg,
   soup_message_headers_set_encoding (msg->response_headers, SOUP_ENCODING_EOF);
   soup_message_headers_set_content_type (msg->response_headers,
       "multipart/x-mixed-replace; boundary=--endofsection", NULL);
+  /**
+   *  FIXME: It's simple way to avoid CORS errors,
+   *         but it should be set by settings.
+   */
+  soup_message_headers_append (msg->response_headers,
+      "Access-Control-Allow-Origin", "*");
   soup_message_set_status (msg, SOUP_STATUS_OK);
 
   sink = gst_bin_get_by_name (GST_BIN (pipeline), "msocksink");
