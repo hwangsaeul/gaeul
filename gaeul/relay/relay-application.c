@@ -109,9 +109,9 @@ gaeul_relay_application_activate (GApplication * app)
       hwangsae_relay_get_source_uri (self->relay));
 
   hwangsae_relay_set_latency (self->relay, HWANGSAE_CALLER_DIRECTION_SINK,
-      g_settings_get_int (self->settings, "sink-latency"));
+      g_settings_get_uint (self->settings, "sink-latency"));
   hwangsae_relay_set_latency (self->relay, HWANGSAE_CALLER_DIRECTION_SRC,
-      g_settings_get_int (self->settings, "source-latency"));
+      g_settings_get_uint (self->settings, "source-latency"));
 
   hwangsae_relay_start (self->relay);
 
