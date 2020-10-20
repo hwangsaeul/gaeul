@@ -72,11 +72,12 @@ test_gaeul_authenticator (void)
     g_main_context_iteration (NULL, FALSE);
   }
 
+  hwangsae_test_streamer_stop (stream);
+
   g_assert_false (accepted);
   accepted = rejected = FALSE;
 
   /* Valid name in both authenticator and streamer - accepted. */
-  hwangsae_test_streamer_stop (stream);
   g_object_set (stream, "username", STREAMER_NAME_VALID, NULL);
   hwangsae_test_streamer_start (stream);
 
