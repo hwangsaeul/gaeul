@@ -44,6 +44,13 @@
     <value nick="VBR" value="2"/>
   </enum>
 
+  <enum id="org.hwangsaeul.Gaeguli.SRTKeyLength">
+    <value nick="default" value="0"/>
+    <value nick="AES-128" value="16"/>
+    <value nick="AES-192" value="24"/>
+    <value nick="AES-256" value="32"/>
+  </enum>
+
   <schema id="org.hwangsaeul.Gaeul2.Source.Channel" path="/org/hwangsaeul/Gaeul2/Source/Channel/">
     <key name="name" type="s">
       <default>""</default>
@@ -73,6 +80,12 @@
     </key>
     <key name="target-uri" type="s">
       <default>""</default>
+    </key>
+    <key name="passphrase" type="s">
+      <default>""</default>
+    </key>
+    <key name="pbkeylen" enum="org.hwangsaeul.Gaeguli.SRTKeyLength">
+      <default>"default"</default>
     </key>
   </schema>
 

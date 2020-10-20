@@ -195,7 +195,8 @@ gaeguli_nest_dbus_register (GaeguliNest * nest, GDBusConnection * connection)
 
 static gboolean
 gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
-    const gchar * uri, GaeguliVideoCodec codec, guint bitrate)
+    const gchar * uri, GaeguliVideoCodec codec, guint bitrate,
+    const gchar * passphrase, GaeguliSRTKeyLength pbkeylen)
 {
   g_autoptr (GError) error = NULL;
 
@@ -210,6 +211,9 @@ gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
         error->message);
     return FALSE;
   }
+
+  g_object_set (nest->target_stream, "passphrase", passphrase, "pbkeylen",
+      pbkeylen, NULL);
 
   gaeguli_target_start (nest->target_stream, &error);
   if (error) {
@@ -357,6 +361,8 @@ gaeul_source_application_command_line (GApplication * app,
     GaeguliSRTMode target_mode = GAEGULI_SRT_MODE_UNKNOWN;
     guint target_port = 0;
     g_autofree gchar *stream_id = NULL;
+    g_autofree gchar *passphrase = NULL;
+    GaeguliSRTKeyLength pbkeylen = GAEGULI_SRT_KEY_LENGTH_0;
 
     g_autoptr (GSettings) ssettings =
         gaeul_gsettings_new (GAEUL_SOURCE_APPLICATION_SCHEMA_ID ".Channel",
@@ -391,7 +397,11 @@ gaeul_source_application_command_line (GApplication * app,
 
     nest = gaeguli_nest_new (stream_id, pipeline);
 
-    if (!gaeguli_nest_start (nest, stream_id, target_uri, video_codec, bitrate)) {
+    passphrase = g_settings_get_string (ssettings, "passphrase");
+    pbkeylen = g_settings_get_enum (ssettings, "pbkeylen");
+
+    if (!gaeguli_nest_start (nest, stream_id, target_uri, video_codec, bitrate,
+            passphrase, pbkeylen)) {
       goto error;
     }
     if (dbus_connection) {
