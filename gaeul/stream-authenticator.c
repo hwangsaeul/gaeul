@@ -26,13 +26,27 @@ struct _GaeulStreamAuthenticator
 
   HwangsaeRelay *relay;
   gulong authenticate_signal_id;
-  GSequence *sink_tokens;
-  GSequence *source_tokens;
+  GHashTable *sink_tokens;
+  GHashTable *source_tokens;
 };
 
 /* *INDENT-OFF* */
 G_DEFINE_TYPE (GaeulStreamAuthenticator, gaeul_stream_authenticator, G_TYPE_OBJECT)
 /* *INDENT-ON* */
+
+typedef struct
+{
+  gchar *username;
+  gchar *resource;
+} TokenData;
+
+static void
+token_data_free (TokenData * data)
+{
+  g_clear_pointer (&data->username, g_free);
+  g_clear_pointer (&data->resource, g_free);
+  g_clear_pointer (&data, g_free);
+}
 
 enum
 {
@@ -54,10 +68,11 @@ gaeul_stream_authenticator_add_sink_token (GaeulStreamAuthenticator * self,
   g_return_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self));
   g_return_if_fail (username != NULL);
 
-  if (!g_sequence_lookup (self->sink_tokens, (gpointer) username,
-          (GCompareDataFunc) strcmp, NULL)) {
-    g_sequence_insert_sorted (self->sink_tokens, g_strdup (username),
-        (GCompareDataFunc) strcmp, NULL);
+  if (!g_hash_table_contains (self->sink_tokens, username)) {
+    TokenData *data = g_new0 (TokenData, 1);
+    data->username = g_strdup (username);
+
+    g_hash_table_insert (self->sink_tokens, data->username, data);
   }
 }
 
@@ -73,10 +88,12 @@ gaeul_stream_authenticator_add_source_token (GaeulStreamAuthenticator * self,
 
   token = g_strdup_printf ("%s:%s", username, resource);
 
-  if (!g_sequence_lookup (self->source_tokens, token, (GCompareDataFunc) strcmp,
-          NULL)) {
-    g_sequence_insert_sorted (self->source_tokens, g_steal_pointer (&token),
-        (GCompareDataFunc) strcmp, NULL);
+  if (!g_hash_table_contains (self->source_tokens, token)) {
+    TokenData *data = g_new0 (TokenData, 1);
+    data->username = g_strdup (username);
+    data->resource = g_strdup (resource);
+
+    g_hash_table_insert (self->sink_tokens, g_steal_pointer (&token), data);
   }
 }
 
@@ -84,16 +101,10 @@ void
 gaeul_stream_authenticator_remove_sink_token (GaeulStreamAuthenticator * self,
     const gchar * username)
 {
-  GSequenceIter *it;
-
   g_return_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self));
   g_return_if_fail (username != NULL);
 
-  it = g_sequence_lookup (self->sink_tokens, (gpointer) username,
-      (GCompareDataFunc) strcmp, NULL);
-  if (it) {
-    g_sequence_remove (it);
-  }
+  g_hash_table_remove (self->sink_tokens, username);
 }
 
 void
@@ -101,7 +112,6 @@ gaeul_stream_authenticator_remove_source_token (GaeulStreamAuthenticator * self,
     const gchar * username, const gchar * resource)
 {
   g_autofree gchar *token = NULL;
-  GSequenceIter *it;
 
   g_return_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self));
   g_return_if_fail (username != NULL);
@@ -109,36 +119,29 @@ gaeul_stream_authenticator_remove_source_token (GaeulStreamAuthenticator * self,
 
   token = g_strdup_printf ("%s:%s", username, resource);
 
-  it = g_sequence_lookup (self->source_tokens, token, (GCompareDataFunc) strcmp,
-      NULL);
-  if (it) {
-    g_sequence_remove (it);
-  }
+  g_hash_table_remove (self->sink_tokens, token);
 }
 
 GVariant *
 gaeul_stream_authenticator_list_sink_tokens (GaeulStreamAuthenticator * self)
 {
   GVariantBuilder builder;
-  GSequenceIter *seq_itr;
+  GHashTableIter it;
+  const gchar *token;
 
   g_return_val_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self), NULL);
 
   g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(si)"));
 
-  seq_itr = g_sequence_get_begin_iter (self->sink_tokens);
+  g_hash_table_iter_init (&it, self->sink_tokens);
 
-  while (seq_itr != g_sequence_get_end_iter (self->sink_tokens)) {
-    const gchar *token = g_sequence_get (seq_itr);
-
+  while (g_hash_table_iter_next (&it, (gpointer *) & token, NULL)) {
     g_variant_builder_open (&builder, G_VARIANT_TYPE ("(si)"));
     g_variant_builder_add (&builder, "s", g_strdup (token));
     /* TODO: it should be extracted from actual status. */
     g_variant_builder_add (&builder, "i", 0);
 
     g_variant_builder_close (&builder);
-
-    seq_itr = g_sequence_iter_next (seq_itr);
   }
 
   return g_variant_builder_end (&builder);
@@ -148,27 +151,24 @@ GVariant *
 gaeul_stream_authenticator_list_source_tokens (GaeulStreamAuthenticator * self)
 {
   GVariantBuilder builder;
-  GSequenceIter *seq_itr;
+  GHashTableIter it;
+  const TokenData *data;
+
 
   g_return_val_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self), NULL);
 
   g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ssi)"));
 
-  seq_itr = g_sequence_get_begin_iter (self->source_tokens);
+  g_hash_table_iter_init (&it, self->source_tokens);
 
-  while (seq_itr != g_sequence_get_end_iter (self->source_tokens)) {
-    const gchar *token_str = g_sequence_get (seq_itr);
-    g_auto (GStrv) tokens = g_strsplit (token_str, ":", -1);
-
+  while (g_hash_table_iter_next (&it, NULL, (gpointer *) & data)) {
     g_variant_builder_open (&builder, G_VARIANT_TYPE ("(ssi)"));
-    g_variant_builder_add (&builder, "s", g_strdup (tokens[0]));
-    g_variant_builder_add (&builder, "s", g_strdup (tokens[1]));
+    g_variant_builder_add (&builder, "s", g_strdup (data->username));
+    g_variant_builder_add (&builder, "s", g_strdup (data->resource));
     /* TODO: it should be extracted from actual status. */
     g_variant_builder_add (&builder, "i", 0);
 
     g_variant_builder_close (&builder);
-
-    seq_itr = g_sequence_iter_next (seq_itr);
   }
 
   return g_variant_builder_end (&builder);
@@ -186,9 +186,7 @@ gaeul_stream_authenticator_on_authenticate (GaeulStreamAuthenticator * self,
 
   switch (direction) {
     case HWANGSAE_CALLER_DIRECTION_SINK:
-      return g_sequence_lookup (self->sink_tokens, (gpointer) username,
-          (GCompareDataFunc) strcmp, NULL) != NULL;
-      break;
+      return g_hash_table_contains (self->sink_tokens, username);
     case HWANGSAE_CALLER_DIRECTION_SRC:{
       g_autofree gchar *token = NULL;
 
@@ -198,8 +196,7 @@ gaeul_stream_authenticator_on_authenticate (GaeulStreamAuthenticator * self,
 
       token = g_strdup_printf ("%s:%s", username, resource);
 
-      return g_sequence_lookup (self->source_tokens, token,
-          (GCompareDataFunc) strcmp, NULL) != NULL;
+      return g_hash_table_contains (self->sink_tokens, token);
       break;
     }
     default:
@@ -235,8 +232,8 @@ gaeul_stream_authenticator_dispose (GObject * object)
     self->authenticate_signal_id = 0;
   }
   g_clear_object (&self->relay);
-  g_clear_pointer (&self->sink_tokens, g_sequence_free);
-  g_clear_pointer (&self->sink_tokens, g_sequence_free);
+  g_clear_pointer (&self->sink_tokens, g_hash_table_unref);
+  g_clear_pointer (&self->sink_tokens, g_hash_table_unref);
 }
 
 static void
@@ -256,6 +253,8 @@ gaeul_stream_authenticator_class_init (GaeulStreamAuthenticatorClass * klass)
 static void
 gaeul_stream_authenticator_init (GaeulStreamAuthenticator * self)
 {
-  self->sink_tokens = g_sequence_new (g_free);
-  self->source_tokens = g_sequence_new (g_free);
+  self->sink_tokens = g_hash_table_new_full (g_str_hash, g_str_equal, NULL,
+      (GDestroyNotify) token_data_free);
+  self->source_tokens = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
+      (GDestroyNotify) token_data_free);
 }
