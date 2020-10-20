@@ -20,6 +20,7 @@
 #define __GAEUL_STREAM_AUTHENTICATOR_H__
 
 #include <glib-object.h>
+#include <gaeguli/gaeguli.h>
 #include <hwangsae/hwangsae.h>
 
 G_BEGIN_DECLS
@@ -37,6 +38,19 @@ void                      gaeul_stream_authenticator_add_source_token
                                                         (GaeulStreamAuthenticator *authenticator,
                                                          const gchar              *username,
                                                          const gchar              *resource);
+
+void                      gaeul_stream_authenticator_set_sink_credentials
+                                                        (GaeulStreamAuthenticator *authenticator,
+                                                         const gchar              *username,
+                                                         const gchar              *passphrase,
+                                                         GaeguliSRTKeyLength       pbkeylen);
+
+void                      gaeul_stream_authenticator_set_source_credentials
+                                                        (GaeulStreamAuthenticator *authenticator,
+                                                         const gchar              *username,
+                                                         const gchar              *resource,
+                                                         const gchar              *passphrase,
+                                                         GaeguliSRTKeyLength       pbkeylen);
 
 void                      gaeul_stream_authenticator_remove_sink_token
                                                         (GaeulStreamAuthenticator *authenticator,

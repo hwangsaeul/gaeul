@@ -38,6 +38,8 @@ typedef struct
 {
   gchar *username;
   gchar *resource;
+  gchar *passphrase;
+  GaeguliSRTKeyLength pbkeylen;
 } TokenData;
 
 static void
@@ -45,6 +47,7 @@ token_data_free (TokenData * data)
 {
   g_clear_pointer (&data->username, g_free);
   g_clear_pointer (&data->resource, g_free);
+  g_clear_pointer (&data->passphrase, g_free);
   g_clear_pointer (&data, g_free);
 }
 
@@ -71,6 +74,7 @@ gaeul_stream_authenticator_add_sink_token (GaeulStreamAuthenticator * self,
   if (!g_hash_table_contains (self->sink_tokens, username)) {
     TokenData *data = g_new0 (TokenData, 1);
     data->username = g_strdup (username);
+    data->pbkeylen = GAEGULI_SRT_KEY_LENGTH_0;
 
     g_hash_table_insert (self->sink_tokens, data->username, data);
   }
@@ -92,8 +96,49 @@ gaeul_stream_authenticator_add_source_token (GaeulStreamAuthenticator * self,
     TokenData *data = g_new0 (TokenData, 1);
     data->username = g_strdup (username);
     data->resource = g_strdup (resource);
+    data->pbkeylen = GAEGULI_SRT_KEY_LENGTH_0;
 
     g_hash_table_insert (self->sink_tokens, g_steal_pointer (&token), data);
+  }
+}
+
+void
+gaeul_stream_authenticator_set_sink_credentials (GaeulStreamAuthenticator *
+    self, const gchar * username, const gchar * passphrase,
+    GaeguliSRTKeyLength pbkeylen)
+{
+  TokenData *data = g_hash_table_lookup (self->sink_tokens, username);
+  if (data) {
+    g_clear_pointer (&data->passphrase, g_free);
+    data->passphrase = g_strdup (passphrase);
+    data->pbkeylen = pbkeylen;
+  } else {
+    g_warning ("Unknown sink token %s", username);
+  }
+}
+
+static TokenData *
+gaeul_stream_authenticator_get_source_token_data (GaeulStreamAuthenticator *
+    self, const gchar * username, const gchar * resource)
+{
+  g_autofree gchar *token = g_strdup_printf ("%s:%s", username, resource);
+
+  return g_hash_table_lookup (self->source_tokens, token);
+}
+
+void
+gaeul_stream_authenticator_set_source_credentials (GaeulStreamAuthenticator *
+    self, const gchar * username, const gchar * resource,
+    const gchar * passphrase, GaeguliSRTKeyLength pbkeylen)
+{
+  TokenData *data = gaeul_stream_authenticator_get_source_token_data (self,
+      username, resource);
+  if (data) {
+    g_clear_pointer (&data->passphrase, g_free);
+    data->passphrase = g_strdup (passphrase);
+    data->pbkeylen = pbkeylen;
+  } else {
+    g_warning ("Unknown source token %s:%s", username, resource);
   }
 }
 
