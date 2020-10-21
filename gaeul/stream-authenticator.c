@@ -26,6 +26,7 @@ struct _GaeulStreamAuthenticator
 
   HwangsaeRelay *relay;
   gulong authenticate_signal_id;
+  gulong passphrase_asked_signal_id;
   GHashTable *sink_tokens;
   GHashTable *source_tokens;
 };
@@ -249,6 +250,29 @@ gaeul_stream_authenticator_on_authenticate (GaeulStreamAuthenticator * self,
   }
 }
 
+static const gchar *
+gaeul_stream_authenticator_on_passphrase_asked (GaeulStreamAuthenticator * self,
+    HwangsaeCallerDirection direction, GSocketAddress * addr,
+    const gchar * username, const gchar * resource)
+{
+  TokenData *data = NULL;
+
+  if (direction == HWANGSAE_CALLER_DIRECTION_SINK) {
+    data = g_hash_table_lookup (self->sink_tokens, username);
+  } else {
+    data = gaeul_stream_authenticator_get_source_token_data (self, username,
+        resource);
+  }
+
+  if (!data) {
+    g_warning ("Passphrase asked for unknown token %s%s%s", username,
+        resource ? ":" : "", resource ? resource : "");
+    return NULL;
+  }
+
+  return g_strdup (data->passphrase);
+}
+
 static void
 gaeul_stream_authenticator_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
@@ -261,6 +285,9 @@ gaeul_stream_authenticator_set_property (GObject * object, guint prop_id,
       self->authenticate_signal_id = g_signal_connect_swapped (self->relay,
           "authenticate",
           (GCallback) gaeul_stream_authenticator_on_authenticate, self);
+      self->passphrase_asked_signal_id = g_signal_connect_swapped (self->relay,
+          "on-passphrase-asked",
+          (GCallback) gaeul_stream_authenticator_on_passphrase_asked, self);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -275,6 +302,10 @@ gaeul_stream_authenticator_dispose (GObject * object)
   if (self->authenticate_signal_id) {
     g_signal_handler_disconnect (self->relay, self->authenticate_signal_id);
     self->authenticate_signal_id = 0;
+  }
+  if (self->passphrase_asked_signal_id) {
+    g_signal_handler_disconnect (self->relay, self->passphrase_asked_signal_id);
+    self->passphrase_asked_signal_id = 0;
   }
   g_clear_object (&self->relay);
   g_clear_pointer (&self->sink_tokens, g_hash_table_unref);
