@@ -100,7 +100,7 @@ gaeul_stream_authenticator_add_source_token (GaeulStreamAuthenticator * self,
     data->resource = g_strdup (resource);
     data->pbkeylen = GAEGULI_SRT_KEY_LENGTH_0;
 
-    g_hash_table_insert (self->sink_tokens, g_steal_pointer (&token), data);
+    g_hash_table_insert (self->source_tokens, g_steal_pointer (&token), data);
   }
 }
 
@@ -243,7 +243,7 @@ gaeul_stream_authenticator_on_authenticate (GaeulStreamAuthenticator * self,
 
       token = g_strdup_printf ("%s:%s", username, resource);
 
-      return g_hash_table_contains (self->sink_tokens, token);
+      return g_hash_table_contains (self->source_tokens, token);
       break;
     }
     default:
