@@ -27,6 +27,7 @@ struct _GaeulStreamAuthenticator
   HwangsaeRelay *relay;
   gulong authenticate_signal_id;
   gulong passphrase_asked_signal_id;
+  gulong pbkeylen_asked_signal_id;
   GHashTable *sink_tokens;
   GHashTable *source_tokens;
 };
@@ -273,6 +274,29 @@ gaeul_stream_authenticator_on_passphrase_asked (GaeulStreamAuthenticator * self,
   return g_strdup (data->passphrase);
 }
 
+static GaeguliSRTKeyLength
+gaeul_stream_authenticator_on_pbkeylen_asked (GaeulStreamAuthenticator * self,
+    HwangsaeCallerDirection direction, GSocketAddress * addr,
+    const gchar * username, const gchar * resource)
+{
+  TokenData *data = NULL;
+
+  if (direction == HWANGSAE_CALLER_DIRECTION_SINK) {
+    data = g_hash_table_lookup (self->sink_tokens, username);
+  } else {
+    data = gaeul_stream_authenticator_get_source_token_data (self, username,
+        resource);
+  }
+
+  if (!data) {
+    g_warning ("SRT key length asked for unknown token %s%s%s", username,
+        resource ? ":" : "", resource ? resource : "");
+    return GAEGULI_SRT_KEY_LENGTH_0;
+  }
+
+  return data->pbkeylen;
+}
+
 static void
 gaeul_stream_authenticator_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
@@ -288,6 +312,9 @@ gaeul_stream_authenticator_set_property (GObject * object, guint prop_id,
       self->passphrase_asked_signal_id = g_signal_connect_swapped (self->relay,
           "on-passphrase-asked",
           (GCallback) gaeul_stream_authenticator_on_passphrase_asked, self);
+      self->pbkeylen_asked_signal_id = g_signal_connect_swapped (self->relay,
+          "on-pbkeylen-asked",
+          (GCallback) gaeul_stream_authenticator_on_pbkeylen_asked, self);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -306,6 +333,10 @@ gaeul_stream_authenticator_dispose (GObject * object)
   if (self->passphrase_asked_signal_id) {
     g_signal_handler_disconnect (self->relay, self->passphrase_asked_signal_id);
     self->passphrase_asked_signal_id = 0;
+  }
+  if (self->pbkeylen_asked_signal_id) {
+    g_signal_handler_disconnect (self->relay, self->pbkeylen_asked_signal_id);
+    self->pbkeylen_asked_signal_id = 0;
   }
   g_clear_object (&self->relay);
   g_clear_pointer (&self->sink_tokens, g_hash_table_unref);
