@@ -27,6 +27,36 @@
     </method>
 
     <!--
+      SetSinkTokenCredentials:
+      @username: sink username
+      @passphrase: encryption passphrase
+      @pbkeylen: key length - 0 (negotiated at connection), 16, 24 or 32.
+
+      Sets encryption passphrase and key length for the given sink token.
+    -->
+    <method name="SetSinkTokenCredentials">
+      <arg name="username" type="s" direction="in"/>
+      <arg name="passphrase" type="s" direction="in"/>
+      <arg name="pbkeylen" type="u" direction="in"/> 
+    </method>
+
+    <!--
+      SetSourceTokenCredentials:
+      @username: source username
+      @resource: sink resource identifier
+      @passphrase: encryption passphrase
+      @pbkeylen: key length - 0 (negotiated at connection), 16, 24 or 32.
+
+      Sets encryption passphrase and key length for the given source token.
+    -->
+    <method name="SetSourceTokenCredentials">
+      <arg name="username" type="s" direction="in"/>
+      <arg name="resource" type="s" direction="in"/>
+      <arg name="passphrase" type="s" direction="in"/>
+      <arg name="pbkeylen" type="u" direction="in"/> 
+    </method>
+
+    <!--
       RemoveSinkToken:
       @username: sink username
 

@@ -214,6 +214,37 @@ gaeul_relay_application_handle_add_source_token (GaeulRelayApplication * self,
 }
 
 static gboolean
+gaeul_relay_application_handle_set_sink_token_credentials (
+    GaeulRelayApplication * self, GDBusMethodInvocation * invocation,
+    const gchar * username, const gchar * passphrase, guint pbkeylen)
+{
+  gaeul_stream_authenticator_set_sink_credentials (self->auth, username,
+      passphrase, pbkeylen);
+  gaeul2_dbus_relay_complete_set_sink_token_credentials (self->dbus_service,
+      invocation);
+
+  g_info ("credentials for token (%s) set", username);
+
+  return TRUE;
+}
+
+static gboolean
+gaeul_relay_application_handle_set_source_token_credentials (
+    GaeulRelayApplication * self, GDBusMethodInvocation * invocation,
+    const gchar * username, const gchar * resource, const gchar * passphrase,
+    guint pbkeylen)
+{
+  gaeul_stream_authenticator_set_source_credentials (self->auth, username,
+      resource, passphrase, pbkeylen);
+  gaeul2_dbus_relay_complete_set_source_token_credentials (self->dbus_service,
+      invocation);
+
+  g_info ("credentials for token (%s,%s) set", username, resource);
+
+  return TRUE;
+}
+
+static gboolean
 gaeul_relay_application_handle_remove_sink_token (GaeulRelayApplication * self,
     GDBusMethodInvocation * invocation, const gchar * username)
 {
@@ -285,6 +316,14 @@ gaeul_relay_application_dbus_register (GApplication * app,
         (GCallback) gaeul_relay_application_handle_add_sink_token, self);
     g_signal_connect_swapped (self->dbus_service, "handle-add-source-token",
         (GCallback) gaeul_relay_application_handle_add_source_token, self);
+    g_signal_connect_swapped (self->dbus_service,
+        "handle-set-sink-token-credentials",
+        (GCallback) gaeul_relay_application_handle_set_sink_token_credentials,
+        self);
+    g_signal_connect_swapped (self->dbus_service,
+        "handle-set-source-token-credentials",
+        (GCallback) gaeul_relay_application_handle_set_source_token_credentials,
+        self);
     g_signal_connect_swapped (self->dbus_service, "handle-remove-sink-token",
         (GCallback) gaeul_relay_application_handle_remove_sink_token, self);
     g_signal_connect_swapped (self->dbus_service, "handle-remove-source-token",
