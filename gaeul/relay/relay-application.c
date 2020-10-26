@@ -113,6 +113,10 @@ gaeul_relay_application_activate (GApplication * app)
   hwangsae_relay_set_latency (self->relay, HWANGSAE_CALLER_DIRECTION_SRC,
       g_settings_get_uint (self->settings, "source-latency"));
 
+  g_object_set (self->dbus_service,
+      "sink-uri", hwangsae_relay_get_sink_uri (self->relay),
+      "source-uri", hwangsae_relay_get_source_uri (self->relay), NULL);
+
   hwangsae_relay_start (self->relay);
 
   G_APPLICATION_CLASS (gaeul_relay_application_parent_class)->activate (app);
