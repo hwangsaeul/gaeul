@@ -48,7 +48,7 @@ static GParamSpec *properties[PROP_LAST] = { NULL };
 
 /* *INDENT-OFF* */
 #define GST_SRTSRC_PIPELINE_DESC \
-    "srtsrc name=src uri=\"%s\" ! queue ! tsdemux latency=%d ! h264parse ! decodebin ! " \
+    "srtsrc name=src uri=\"%s\" latency=%d ! queue ! tsdemux latency=%d ! h264parse ! decodebin ! " \
     "videoconvert ! videoscale ! videorate ! " \
     "video/x-raw, framerate=%d/1, width=%d, height=%d ! "\
     "jpegenc ! multipartmux boundary=endofsection ! multisocketsink name=msocksink sync=false"
@@ -89,12 +89,13 @@ G_DEFINE_TYPE (GaeulMjpegApplication, gaeul_mjpeg_application, GAEUL_TYPE_APPLIC
 
 static gchar *
 _build_srtsrc_pipeline_desc (const gchar * relay_uri,
-    gint width, gint height, gint fps, gint latency)
+    GaeulMjpegRequest * request)
 {
   g_autofree gchar *pipeline_desc = NULL;
 
   pipeline_desc = g_strdup_printf (GST_SRTSRC_PIPELINE_DESC,
-      relay_uri, latency, fps, width, height);
+      relay_uri, request->protocol_latency, request->demux_latency,
+      request->fps, request->width, request->height);
 
   return g_steal_pointer (&pipeline_desc);
 }
@@ -518,7 +519,12 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
   gpointer key, value;
   gboolean found = FALSE;
 
-  request = gaeul_mjpeg_request_new (uid, rid, 0, latency, width, height, fps);
+  /* FIXME: The latency of tsdemux needs to be large enough to have 
+   * 2-3 PCRs in the mpeg-ts stream. Since the default value of
+   * pcr-interval is 3600 in 90kHz(=40ms), it should be 80-120 ms.
+   * However, the exact result of how much latency varies is unsure.
+   */
+  request = gaeul_mjpeg_request_new (uid, rid, latency, 65, width, height, fps);
 
   /* Every start request will have unique id. */
   request_id = g_uuid_string_random ();
@@ -556,8 +562,7 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
     g_autoptr (GError) error = NULL;
     g_autofree gchar *streamid = NULL;
     g_autofree gchar *pipeline_desc =
-        _build_srtsrc_pipeline_desc (self->relay_url, width, height, fps,
-        latency);
+        _build_srtsrc_pipeline_desc (self->relay_url, request);
     pipeline = gst_parse_launch (pipeline_desc, &error);
 
     if (error != NULL) {
