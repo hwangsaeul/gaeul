@@ -1,6 +1,7 @@
 tests = [
   'test-tuple',
   'test-mjpeg-request',
+  'test-relay-dbus',
   'test-authenticator',
 ]
 
@@ -14,7 +15,9 @@ foreach t: tests
     dependencies: [
       libgaeul_dep,
       libgaeul_mjpeg_dep,
+      libgaeul_relay_dep,
       hwangsae_dep,
+      gaeguli_test_common_dep,
       hwangsae_test_common_dep ],
     install: false,
   )

@@ -51,6 +51,8 @@ hwangsaeul_req_version = '>= 0.10.0'
 
 gaeguli_dep = dependency('gaeguli-2.0', version: hwangsaeul_req_version,
     fallback: ['gaeguli', 'libgaeguli_dep'])
+gaeguli_test_common_dep = dependency('gaeguli-test-common-2.0', version: hwangsaeul_req_version,
+    fallback: ['gaeguli', 'libgaeguli_test_common_dep'])
 hwangsae_dep = dependency('hwangsae-2.0', version: hwangsaeul_req_version,
     fallback: ['hwangsae', 'libhwangsae_dep'])
 hwangsae_test_common_dep = dependency('hwangsae-test-common-2.0', version: hwangsaeul_req_version,
