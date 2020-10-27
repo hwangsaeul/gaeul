@@ -59,24 +59,30 @@
     <!--
       RemoveSinkToken:
       @username: sink username
+      @disconnect: true if any connections matching @username currently in
+      progress should get terminated.
 
       Removes @username from the list of accepted sink tokens. Sink endpoints
       identifying itself with that name will be rejected connection.
     -->
     <method name="RemoveSinkToken">
       <arg name="username" type="s" direction="in"/>
+      <arg name="disconnect" type="b" direction="in"/>
     </method>
 
     <!--
       RemoveSourceToken:
       @username: source username
       @resource: sink resource identifier
+      @disconnect: true if any connections matching @username and @resource
+      currently in progress should get terminated.
 
       Rejects @username access to the stream identified as @resource.
     -->
     <method name="RemoveSourceToken">
       <arg name="username" type="s" direction="in"/>
       <arg name="resource" type="s" direction="in"/>
+      <arg name="disconnect" type="b" direction="in"/>
     </method>
 
     <!--

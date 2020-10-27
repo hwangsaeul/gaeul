@@ -250,9 +250,13 @@ gaeul_relay_application_handle_set_source_token_credentials (
 
 static gboolean
 gaeul_relay_application_handle_remove_sink_token (GaeulRelayApplication * self,
-    GDBusMethodInvocation * invocation, const gchar * username)
+    GDBusMethodInvocation * invocation, const gchar * username,
+    gboolean disconnect)
 {
   gaeul_stream_authenticator_remove_sink_token (self->auth, username);
+  if (disconnect) {
+    hwangsae_relay_disconnect_sink (self->relay, username);
+  }
   gaeul2_dbus_relay_complete_remove_sink_token (self->dbus_service, invocation);
 
   g_info ("a sink token (%s) is added", username);
@@ -263,10 +267,13 @@ gaeul_relay_application_handle_remove_sink_token (GaeulRelayApplication * self,
 static gboolean
 gaeul_relay_application_handle_remove_source_token (GaeulRelayApplication *
     self, GDBusMethodInvocation * invocation, const gchar * username,
-    const gchar * resource)
+    const gchar * resource, gboolean disconnect)
 {
   gaeul_stream_authenticator_remove_source_token (self->auth, username,
       resource);
+  if (disconnect) {
+    hwangsae_relay_disconnect_source (self->relay, username, resource);
+  }
   gaeul2_dbus_relay_complete_remove_source_token (self->dbus_service,
       invocation);
 
