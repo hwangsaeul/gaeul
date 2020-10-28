@@ -86,6 +86,23 @@
     </method>
 
     <!--
+       RerouteSource:
+       @from_username: source username to reroute from
+       @resource: sink resource to reroute
+       @to_username: source username to reroute to
+
+       Removes @from_username / @resource source token and disconnects all
+       matching connections while adding a token for @to_username / @resource
+       so that @resource starts to be streamed to the new source username once
+       a matching caller connects.
+    -->
+    <method name="RerouteSource">
+      <arg name="from_username" type="s" direction="in"/>
+      <arg name="resource" type="s" direction="in"/>
+      <arg name="to_username" type="s" direction="in"/>
+    </method>
+
+    <!--
       ListSinkTokens:
       @tokens: array of sink usernames
 

@@ -283,6 +283,22 @@ gaeul_relay_application_handle_remove_source_token (GaeulRelayApplication *
 }
 
 static gboolean
+gaeul_relay_application_handle_reroute_source (GaeulRelayApplication * self,
+    GDBusMethodInvocation * invocation, const gchar * from_username,
+    const gchar * resource, const gchar * to_username)
+{
+  gaeul_stream_authenticator_remove_source_token (self->auth, from_username,
+      resource);
+  hwangsae_relay_disconnect_source (self->relay, from_username, resource);
+  gaeul_stream_authenticator_add_source_token (self->auth, to_username,
+      resource);
+
+  gaeul2_dbus_relay_complete_reroute_source (self->dbus_service, invocation);
+
+  return TRUE;
+}
+
+static gboolean
 gaeul_relay_application_handle_list_sink_tokens (GaeulRelayApplication *
     self, GDBusMethodInvocation * invocation)
 {
@@ -339,6 +355,8 @@ gaeul_relay_application_dbus_register (GApplication * app,
         (GCallback) gaeul_relay_application_handle_remove_sink_token, self);
     g_signal_connect_swapped (self->dbus_service, "handle-remove-source-token",
         (GCallback) gaeul_relay_application_handle_remove_source_token, self);
+    g_signal_connect_swapped (self->dbus_service, "handle-reroute-source",
+        (GCallback) gaeul_relay_application_handle_reroute_source, self);
     g_signal_connect_swapped (self->dbus_service, "handle-list-sink-tokens",
         (GCallback) gaeul_relay_application_handle_list_sink_tokens, self);
     g_signal_connect_swapped (self->dbus_service, "handle-list-source-tokens",
