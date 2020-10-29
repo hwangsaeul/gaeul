@@ -233,7 +233,7 @@ gaeul_relay_disco_test_class_init (GaeulRelayDiscoTestClass * klass)
 }
 
 static void
-test_gaeul_remove_token_with_disconnect (void)
+test_gaeul_relay_disconnect (void)
 {
   g_autoptr (GaeulRelayAgentTest) test =
       g_object_new (GAEUL_TYPE_RELAY_DISCO_TEST, NULL);
@@ -250,8 +250,7 @@ main (int argc, char *argv[])
   /* Don't treat warnings as fatal, which is GTest default. */
   g_log_set_always_fatal (G_LOG_FATAL_MASK | G_LOG_LEVEL_CRITICAL);
 
-  g_test_add_func ("/gaeul/remove-token-with-disconnect",
-      test_gaeul_remove_token_with_disconnect);
+  g_test_add_func ("/gaeul/relay-disconnect", test_gaeul_relay_disconnect);
 
   return g_test_run ();
 }

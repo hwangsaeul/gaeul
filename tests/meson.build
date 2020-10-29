@@ -3,7 +3,7 @@ subdir ('common')
 tests = [
   'test-tuple',
   'test-mjpeg-request',
-  'test-relay-dbus',
+  'test-relay-disconnect',
   'test-authenticator',
 ]
 
