@@ -1,3 +1,5 @@
+subdir ('common')
+
 tests = [
   'test-tuple',
   'test-mjpeg-request',
@@ -12,6 +14,7 @@ foreach t: tests
     t, '@0@.c'.format(t),
     c_args: '-DG_LOG_DOMAIN="g2-tests"',
     include_directories: gaeul_incs,
+    link_with: libgaeul_test_common,
     dependencies: [
       libgaeul_dep,
       libgaeul_mjpeg_dep,

@@ -30,21 +30,17 @@
  * 9. check that the sink AND the source are both disconnected
  */
 
-#include "gaeul/relay/relay-application.h"
-#include "gaeul/relay/relay-generated.h"
+#include "common/relay-agent-test.h"
 
 #include <gaeguli/test/receiver.h>
-#include <hwangsae/test/test.h>
 
 #define SINK_NAME "ValidSink"
 #define SOURCE_NAME "ValidSource"
 
-#define SINK_PORT 7777
-#define SOURCE_PORT 8888
-
-#define GAEUL_TYPE_RELAY_DBUS_TEST     (gaeul_relay_dbus_test_get_type ())
+#define GAEUL_TYPE_RELAY_DISCO_TEST     (gaeul_relay_disco_test_get_type ())
 /* *INDENT-OFF* */
-G_DECLARE_FINAL_TYPE (GaeulRelayDBusTest, gaeul_relay_dbus_test, GAEUL, RELAY_DBUS_TEST, GObject)
+G_DECLARE_FINAL_TYPE (GaeulRelayDiscoTest, gaeul_relay_disco_test,
+    GAEUL, RELAY_DISCO_TEST, GaeulRelayAgentTest)
 /* *INDENT-ON* */
 
 typedef enum
@@ -55,18 +51,12 @@ typedef enum
   STAGE_DISCONNECT_SINK,
 } Stage;
 
-struct _GaeulRelayDBusTest
+struct _GaeulRelayDiscoTest
 {
-  GObject parent;
+  GaeulRelayAgentTest parent;
 
-  gchar *app_id;
-
-  GThread *relay_thread;
-  GMainLoop *loop;
-
-  GApplication *relay_app;
-  Gaeul2DBusRelay *relay_proxy;
-
+  HwangsaeTestStreamer *streamer;
+  GstElement *receiver;
   GstElement *receiver_srtsrc;
 
   Stage stage;
@@ -76,40 +66,20 @@ struct _GaeulRelayDBusTest
 };
 
 /* *INDENT-OFF* */
-G_DEFINE_TYPE (GaeulRelayDBusTest, gaeul_relay_dbus_test, G_TYPE_OBJECT)
+G_DEFINE_TYPE (GaeulRelayDiscoTest, gaeul_relay_disco_test,
+    GAEUL_TYPE_RELAY_AGENT_TEST)
 /* *INDENT-ON* */
 
 static void
-dbus_add_sink_token (Gaeul2DBusRelay * relay_proxy)
-{
-  g_autoptr (GError) error = NULL;
-
-  g_assert_true (gaeul2_dbus_relay_call_add_sink_token_sync (relay_proxy,
-          SINK_NAME, NULL, &error));
-  g_assert_no_error (error);
-}
-
-static void
-dbus_add_source_token (Gaeul2DBusRelay * relay_proxy)
-{
-  g_autoptr (GError) error = NULL;
-
-  g_assert_true (gaeul2_dbus_relay_call_add_source_token_sync (relay_proxy,
-          SOURCE_NAME, SINK_NAME, NULL, &error));
-  g_assert_no_error (error);
-}
-
-static void
-maybe_finish_test (GaeulRelayDBusTest * self)
+maybe_finish_test (GaeulRelayDiscoTest * self)
 {
   if (self->source_disconnected && self->sink_disconnected) {
-    g_debug ("Test finished. Releasing relay application...");
-    g_main_loop_quit (self->loop);
+    gaeul_relay_agent_test_finish (GAEUL_RELAY_AGENT_TEST (self));
   }
 }
 
 gboolean
-source_bus_cb (GstBus * bus, GstMessage * message, GaeulRelayDBusTest * self)
+source_bus_cb (GstBus * bus, GstMessage * message, GaeulRelayDiscoTest * self)
 {
   if (message->type == GST_MESSAGE_WARNING) {
     g_autoptr (GError) error = NULL;
@@ -126,7 +96,8 @@ source_bus_cb (GstBus * bus, GstMessage * message, GaeulRelayDBusTest * self)
           /* Receiver disconnected. Put receiver token back and wait for
            * receiver reconnection. */
           self->stage = STAGE_WAIT_FOR_BUFFER_2;
-          dbus_add_source_token (self->relay_proxy);
+          gaeul_relay_agent_test_add_source_token (GAEUL_RELAY_AGENT_TEST
+              (self), SOURCE_NAME, SINK_NAME);
           break;
         case STAGE_WAIT_FOR_BUFFER_2:
           g_debug ("%s STAGE_WAIT_FOR_BUFFER_2", __FUNCTION__);
@@ -145,18 +116,15 @@ source_bus_cb (GstBus * bus, GstMessage * message, GaeulRelayDBusTest * self)
 
 static void
 on_buffer_received (GstElement * object, GstBuffer * buffer, GstPad * pad,
-    GaeulRelayDBusTest * self)
+    GaeulRelayDiscoTest * self)
 {
-  g_autoptr (GError) error = NULL;
-
   switch (self->stage) {
     case STAGE_WAIT_FOR_BUFFER_1:{
       g_debug ("%s STAGE_WAIT_FOR_BUFFER_1", __FUNCTION__);
       self->stage = STAGE_DISCONNECT_SOURCE;
       /* Remove source token and force receiver be disconnected. */
-      g_assert_true (gaeul2_dbus_relay_call_remove_source_token_sync
-          (self->relay_proxy, SOURCE_NAME, SINK_NAME, TRUE, NULL, &error));
-      g_assert_no_error (error);
+      gaeul_relay_agent_test_remove_source_token (GAEUL_RELAY_AGENT_TEST (self),
+          SOURCE_NAME, SINK_NAME);
       break;
     }
     case STAGE_DISCONNECT_SOURCE:
@@ -165,9 +133,8 @@ on_buffer_received (GstElement * object, GstBuffer * buffer, GstPad * pad,
     case STAGE_WAIT_FOR_BUFFER_2:
       g_debug ("%s STAGE_WAIT_FOR_BUFFER_2", __FUNCTION__);
       /* Receiver is back. Remove sink token & force disconnect. */
-      g_assert_true (gaeul2_dbus_relay_call_remove_sink_token_sync
-          (self->relay_proxy, SINK_NAME, TRUE, NULL, &error));
-      g_assert_no_error (error);
+      gaeul_relay_agent_test_remove_sink_token (GAEUL_RELAY_AGENT_TEST (self),
+          SINK_NAME);
       self->stage = STAGE_DISCONNECT_SINK;
       break;
     case STAGE_DISCONNECT_SINK:
@@ -177,7 +144,7 @@ on_buffer_received (GstElement * object, GstBuffer * buffer, GstPad * pad,
 }
 
 static void
-on_sink_connection_error (GaeulRelayDBusTest * self, GaeguliTarget * target,
+on_sink_connection_error (GaeulRelayDiscoTest * self, GaeguliTarget * target,
     GError * error)
 {
   switch (self->stage) {
@@ -200,138 +167,78 @@ on_sink_connection_error (GaeulRelayDBusTest * self, GaeguliTarget * target,
   }
 }
 
-static gboolean
-quit_relay (GApplication * app)
+static void
+gaeul_relay_disco_test_setup (GaeulRelayAgentTest * test)
 {
-  g_application_quit (app);
+  GaeulRelayDiscoTest *self = GAEUL_RELAY_DISCO_TEST (test);
 
-  return G_SOURCE_REMOVE;
-}
-
-static gboolean
-gaeul_relay_dbus_test_thread (GaeulRelayDBusTest * self)
-{
-  g_autoptr (GMainContext) context = g_main_context_new ();
-  g_autoptr (HwangsaeTestStreamer) streamer = NULL;
   g_autoptr (GstBus) bus = NULL;
-  g_autoptr (GstElement) receiver = NULL;
   g_autoptr (GError) error = NULL;
-  g_autofree gchar *sink_uri = NULL;
-  g_autofree gchar *source_uri = NULL;
 
-  g_main_context_push_thread_default (context);
+  gaeul_relay_agent_test_add_sink_token (test, SINK_NAME);
+  gaeul_relay_agent_test_add_source_token (test, SOURCE_NAME, SINK_NAME);
 
-  self->relay_proxy =
-      gaeul2_dbus_relay_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-      G_DBUS_PROXY_FLAGS_NONE, self->app_id, "/org/hwangsaeul/Gaeul2/Relay",
-      NULL, &error);
-  g_assert_no_error (error);
+  self->streamer = gaeul_relay_agent_test_create_sink (test);
+  g_object_set (self->streamer, "username", SINK_NAME, NULL);
 
-  dbus_add_sink_token (self->relay_proxy);
-  dbus_add_source_token (self->relay_proxy);
-
-  g_object_get (self->relay_proxy, "sink-uri", &sink_uri,
-      "source-uri", &source_uri, NULL);
-
-  streamer = hwangsae_test_streamer_new ();
-  hwangsae_test_streamer_set_uri (streamer, sink_uri);
-  g_object_set (streamer, "username", SINK_NAME, NULL);
-
-  receiver = gaeguli_tests_create_receiver (GAEGULI_SRT_MODE_CALLER,
-      SOURCE_PORT);
-  gaeguli_tests_receiver_set_handoff_callback (receiver,
+  self->receiver = gaeul_relay_agent_test_create_source (test);
+  gaeguli_tests_receiver_set_handoff_callback (self->receiver,
       (GCallback) on_buffer_received, self);
-  gaeguli_tests_receiver_set_username (receiver, SOURCE_NAME, SINK_NAME);
+  gaeguli_tests_receiver_set_username (self->receiver, SOURCE_NAME, SINK_NAME);
 
-  self->receiver_srtsrc = gst_bin_get_by_name (GST_BIN (receiver), "src");
+  self->receiver_srtsrc = gst_bin_get_by_name (GST_BIN (self->receiver), "src");
 
-  bus = gst_element_get_bus (receiver);
+  bus = gst_element_get_bus (self->receiver);
   gst_bus_add_watch (bus, (GstBusFunc) source_bus_cb, self);
 
-  hwangsae_test_streamer_start (streamer);
-  g_signal_connect_swapped (streamer->pipeline, "connection-error",
+  hwangsae_test_streamer_start (self->streamer);
+  g_signal_connect_swapped (self->streamer->pipeline, "connection-error",
       (GCallback) on_sink_connection_error, self);
-
-  self->loop = g_main_loop_new (context, FALSE);
-  g_main_loop_run (self->loop);
-
-  gst_element_set_state (receiver, GST_STATE_NULL);
-
-  g_idle_add ((GSourceFunc) quit_relay, self->relay_app);
-
-  return TRUE;
 }
 
 static void
-on_app_activate (GaeulRelayDBusTest * self)
+gaeul_relay_disco_test_teardown (GaeulRelayAgentTest * test)
 {
-  self->relay_thread = g_thread_new ("relay-thread",
-      (GThreadFunc) gaeul_relay_dbus_test_thread, self);
+  GaeulRelayDiscoTest *self = GAEUL_RELAY_DISCO_TEST (test);
+
+  gst_element_set_state (self->receiver, GST_STATE_NULL);
 }
 
 static void
-gaeul_relay_dbus_test_init (GaeulRelayDBusTest * self)
+gaeul_relay_disco_test_init (GaeulRelayDiscoTest * self)
 {
-  self->app_id =
-      g_strdup_printf (GAEUL_RELAY_APPLICATION_SCHEMA_ID "_%d", getpid ());
 }
 
 static void
-gaeul_relay_dbus_test_run (GaeulRelayDBusTest * self)
+gaeul_relay_disco_test_dispose (GObject * object)
 {
-  g_autofree gchar *config_path = NULL;
-  g_autofree gchar *config = NULL;
-  g_autoptr (GError) error = NULL;
+  GaeulRelayDiscoTest *self = GAEUL_RELAY_DISCO_TEST (object);
 
-/* *INDENT-OFF* */
-  config = g_strdup_printf ("[org/hwangsaeul/Gaeul2/Relay]\n"
-      "sink-port=%d\n"
-      "source-port=%d\n"
-      "authentication=true", SINK_PORT, SOURCE_PORT);
-/* *INDENT-ON* */
-
-  config_path = g_build_filename (g_get_tmp_dir (), "relay-XXXXXX.conf", NULL);
-  g_file_set_contents (config_path, config, strlen (config), &error);
-  g_assert_no_error (error);
-
-  self->relay_app = G_APPLICATION (g_object_new (GAEUL_TYPE_RELAY_APPLICATION,
-          "application-id", self->app_id, "config-path", config_path,
-          "dbus-type", GAEUL_APPLICATION_DBUS_TYPE_SESSION, NULL));
-  g_application_hold (self->relay_app);
-
-  g_signal_connect_swapped (self->relay_app, "activate",
-      (GCallback) on_app_activate, self);
-
-  gaeul_application_run (GAEUL_APPLICATION (self->relay_app), 0, NULL);
-}
-
-static void
-gaeul_relay_dbus_test_dispose (GObject * object)
-{
-  GaeulRelayDBusTest *self = GAEUL_RELAY_DBUS_TEST (object);
-
-  g_clear_pointer (&self->relay_thread, g_thread_join);
-  g_clear_pointer (&self->app_id, g_free);
-  g_clear_object (&self->relay_app);
-  g_clear_object (&self->relay_proxy);
+  g_clear_object (&self->streamer);
+  gst_clear_object (&self->receiver);
   gst_clear_object (&self->receiver_srtsrc);
+
+  G_OBJECT_CLASS (gaeul_relay_disco_test_parent_class)->dispose (object);
 }
 
 static void
-gaeul_relay_dbus_test_class_init (GaeulRelayDBusTestClass * klass)
+gaeul_relay_disco_test_class_init (GaeulRelayDiscoTestClass * klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+  GaeulRelayAgentTestClass *test_class = GAEUL_RELAY_AGENT_TEST_CLASS (klass);
 
-  gobject_class->dispose = gaeul_relay_dbus_test_dispose;
+  gobject_class->dispose = gaeul_relay_disco_test_dispose;
+  test_class->setup = gaeul_relay_disco_test_setup;
+  test_class->teardown = gaeul_relay_disco_test_teardown;
 }
 
 static void
 test_gaeul_remove_token_with_disconnect (void)
 {
-  g_autoptr (GaeulRelayDBusTest) test =
-      g_object_new (GAEUL_TYPE_RELAY_DBUS_TEST, NULL);
+  g_autoptr (GaeulRelayAgentTest) test =
+      g_object_new (GAEUL_TYPE_RELAY_DISCO_TEST, NULL);
 
-  gaeul_relay_dbus_test_run (test);
+  gaeul_relay_agent_test_run (test);
 }
 
 int
