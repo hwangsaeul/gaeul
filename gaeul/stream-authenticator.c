@@ -144,29 +144,29 @@ gaeul_stream_authenticator_set_source_credentials (GaeulStreamAuthenticator *
   }
 }
 
-void
+gboolean
 gaeul_stream_authenticator_remove_sink_token (GaeulStreamAuthenticator * self,
     const gchar * username)
 {
-  g_return_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self));
-  g_return_if_fail (username != NULL);
+  g_return_val_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self), FALSE);
+  g_return_val_if_fail (username != NULL, FALSE);
 
-  g_hash_table_remove (self->sink_tokens, username);
+  return g_hash_table_remove (self->sink_tokens, username);
 }
 
-void
+gboolean
 gaeul_stream_authenticator_remove_source_token (GaeulStreamAuthenticator * self,
     const gchar * username, const gchar * resource)
 {
   g_autofree gchar *token = NULL;
 
-  g_return_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self));
-  g_return_if_fail (username != NULL);
-  g_return_if_fail (resource != NULL);
+  g_return_val_if_fail (GAEUL_IS_STREAM_AUTHENTICATOR (self), FALSE);
+  g_return_val_if_fail (username != NULL, FALSE);
+  g_return_val_if_fail (resource != NULL, FALSE);
 
   token = g_strdup_printf ("%s:%s", username, resource);
 
-  g_hash_table_remove (self->sink_tokens, token);
+  return g_hash_table_remove (self->source_tokens, token);
 }
 
 GVariant *

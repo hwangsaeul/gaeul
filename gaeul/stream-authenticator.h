@@ -52,11 +52,11 @@ void                      gaeul_stream_authenticator_set_source_credentials
                                                          const gchar              *passphrase,
                                                          GaeguliSRTKeyLength       pbkeylen);
 
-void                      gaeul_stream_authenticator_remove_sink_token
+gboolean                  gaeul_stream_authenticator_remove_sink_token
                                                         (GaeulStreamAuthenticator *authenticator,
                                                          const gchar              *username);
 
-void                      gaeul_stream_authenticator_remove_source_token
+gboolean                  gaeul_stream_authenticator_remove_source_token
                                                         (GaeulStreamAuthenticator *authenticator,
                                                          const gchar              *username,
                                                          const gchar              *resource);
