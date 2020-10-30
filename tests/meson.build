@@ -4,6 +4,7 @@ tests = [
   'test-tuple',
   'test-mjpeg-request',
   'test-relay-disconnect',
+  'test-relay-reroute',
   'test-authenticator',
 ]
 
