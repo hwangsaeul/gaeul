@@ -19,6 +19,7 @@
 #include "config.h"
 
 #include "gaeul.h"
+#include "types.h"
 #include "stream-authenticator.h"
 #include "gaeul/relay/relay-application.h"
 #include "gaeul/relay/relay-generated.h"
@@ -253,13 +254,18 @@ gaeul_relay_application_handle_remove_sink_token (GaeulRelayApplication * self,
     GDBusMethodInvocation * invocation, const gchar * username,
     gboolean disconnect)
 {
-  gaeul_stream_authenticator_remove_sink_token (self->auth, username);
+  if (!gaeul_stream_authenticator_remove_sink_token (self->auth, username)) {
+    g_dbus_method_invocation_return_error (invocation,
+        GAEUL_AUTHENTICATOR_ERROR, GAEUL_AUTHENTICATOR_ERROR_NO_SUCH_TOKEN,
+        "No sink token (%s)", username);
+    return TRUE;
+  }
   if (disconnect) {
     hwangsae_relay_disconnect_sink (self->relay, username);
   }
   gaeul2_dbus_relay_complete_remove_sink_token (self->dbus_service, invocation);
 
-  g_info ("a sink token (%s) is added", username);
+  g_info ("a sink token (%s) is removed", username);
 
   return TRUE;
 }
@@ -269,8 +275,14 @@ gaeul_relay_application_handle_remove_source_token (GaeulRelayApplication *
     self, GDBusMethodInvocation * invocation, const gchar * username,
     const gchar * resource, gboolean disconnect)
 {
-  gaeul_stream_authenticator_remove_source_token (self->auth, username,
-      resource);
+  if (!gaeul_stream_authenticator_remove_source_token (self->auth, username,
+          resource)) {
+    g_dbus_method_invocation_return_error (invocation,
+        GAEUL_AUTHENTICATOR_ERROR, GAEUL_AUTHENTICATOR_ERROR_NO_SUCH_TOKEN,
+        "No source token (%s,%s)", username, resource);
+    return TRUE;
+  }
+
   if (disconnect) {
     hwangsae_relay_disconnect_source (self->relay, username, resource);
   }
@@ -287,8 +299,14 @@ gaeul_relay_application_handle_reroute_source (GaeulRelayApplication * self,
     GDBusMethodInvocation * invocation, const gchar * from_username,
     const gchar * resource, const gchar * to_username)
 {
-  gaeul_stream_authenticator_remove_source_token (self->auth, from_username,
-      resource);
+  if (!gaeul_stream_authenticator_remove_source_token (self->auth,
+          from_username, resource)) {
+    g_dbus_method_invocation_return_error (invocation,
+        GAEUL_AUTHENTICATOR_ERROR, GAEUL_AUTHENTICATOR_ERROR_NO_SUCH_TOKEN,
+        "No source token (%s,%s)", from_username, resource);
+    return TRUE;
+  }
+
   hwangsae_relay_disconnect_source (self->relay, from_username, resource);
   gaeul_stream_authenticator_add_source_token (self->auth, to_username,
       resource);

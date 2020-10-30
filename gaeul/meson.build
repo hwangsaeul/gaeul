@@ -6,6 +6,7 @@ source_h = [
   'gaeul.h',
   'application.h',
   'tuple.h',
+  'types.h',
   'stream-authenticator.h',
 ]
 
@@ -13,6 +14,7 @@ source_c = [
   'gaeul.c',
   'application.c',
   'tuple.c',
+  'types.c',
   'stream-authenticator.c',
 ]
 

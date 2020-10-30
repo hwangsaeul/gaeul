@@ -1,5 +1,6 @@
 /*** BEGIN file-header ***/
 #include "enumtypes.h"
+#include <gaeul/types.h>
 
 #define C_ENUM(v) ((gint) v)
 #define C_FLAGS(v) ((guint) v)
