@@ -19,7 +19,6 @@
 #include "relay-agent-test.h"
 
 #include "gaeul/relay/relay-application.h"
-#include "gaeul/relay/relay-generated.h"
 
 #include <gaeguli/test/receiver.h>
 
@@ -189,6 +188,15 @@ gaeul_relay_agent_test_remove_source_token (GaeulRelayAgentTest * self,
   g_assert_true (gaeul2_dbus_relay_call_remove_source_token_sync
       (priv->relay_proxy, username, resource, TRUE, NULL, &error));
   g_assert_no_error (error);
+}
+
+Gaeul2DBusRelay *
+gaeul_relay_agent_test_get_dbus_proxy (GaeulRelayAgentTest * self)
+{
+  GaeulRelayAgentTestPrivate *priv =
+      gaeul_relay_agent_test_get_instance_private (self);
+
+  return priv->relay_proxy;
 }
 
 HwangsaeTestStreamer *

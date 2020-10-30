@@ -21,6 +21,8 @@
 
 #include <hwangsae/test/test.h>
 
+#include "gaeul/relay/relay-generated.h"
+
 #define GAEUL_TYPE_RELAY_AGENT_TEST     (gaeul_relay_agent_test_get_type ())
 G_DECLARE_DERIVABLE_TYPE (GaeulRelayAgentTest, gaeul_relay_agent_test, GAEUL,
     RELAY_AGENT_TEST, GObject)
@@ -48,6 +50,8 @@ void                   gaeul_relay_agent_test_remove_sink_token   (GaeulRelayAge
 void                   gaeul_relay_agent_test_remove_source_token (GaeulRelayAgentTest *self,
                                                                    const gchar         *username,
                                                                    const gchar         *resource);
+
+Gaeul2DBusRelay      * gaeul_relay_agent_test_get_dbus_proxy      (GaeulRelayAgentTest *self);
 
 HwangsaeTestStreamer * gaeul_relay_agent_test_create_sink         (GaeulRelayAgentTest *self);
 
