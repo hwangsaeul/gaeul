@@ -16,6 +16,8 @@
  *
  */
 
+#include "types.h"
+
 #include "common/relay-agent-test.h"
 
 #include <gaeguli/test/receiver.h>
@@ -103,6 +105,13 @@ src1_on_buffer_received (GstElement * object, GstBuffer * buffer, GstPad * pad,
       g_autoptr (GError) error = NULL;
 
       self->stage = STAGE_SRC2_RECEIVING;
+
+      /* First try a source token that doesn't exist. */
+      g_assert_false (gaeul2_dbus_relay_call_reroute_source_sync (proxy,
+              "NoSuchName", SINK_NAME, SOURCE2_NAME, NULL, &error));
+      g_assert_error (error, GAEUL_AUTHENTICATOR_ERROR,
+          GAEUL_AUTHENTICATOR_ERROR_NO_SUCH_TOKEN);
+      g_clear_error (&error);
 
       g_assert_true (gaeul2_dbus_relay_call_reroute_source_sync (proxy,
               SOURCE1_NAME, SINK_NAME, SOURCE2_NAME, NULL, &error));
