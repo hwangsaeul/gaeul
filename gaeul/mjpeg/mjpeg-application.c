@@ -50,8 +50,9 @@ static GParamSpec *properties[PROP_LAST] = { NULL };
 #define GST_SRTSRC_PIPELINE_DESC \
     "srtsrc name=src uri=\"%s\" latency=%d ! queue ! tsdemux latency=%d ! h264parse ! decodebin ! " \
     "videoconvert ! videoscale ! videorate ! " \
-    "video/x-raw, framerate=%d/1, width=%d, height=%d ! "\
-    "jpegenc ! multipartmux boundary=endofsection ! multisocketsink name=msocksink sync=false"
+    "video/x-raw, framerate=%d/1, width=%d, height=%d ! " \
+    "jpegenc ! videoflip name=flip video-direction=%u ! videoflip name=orientation video-direction=%u ! " \
+    "multipartmux boundary=endofsection ! multisocketsink name=msocksink sync=false"
 /* *INDENT-ON* */
 
 struct _GaeulMjpegApplication
@@ -95,7 +96,8 @@ _build_srtsrc_pipeline_desc (const gchar * relay_uri,
 
   pipeline_desc = g_strdup_printf (GST_SRTSRC_PIPELINE_DESC,
       relay_uri, request->protocol_latency, request->demux_latency,
-      request->fps, request->width, request->height);
+      request->fps, request->width, request->height, request->flip,
+      request->orientation);
 
   return g_steal_pointer (&pipeline_desc);
 }
@@ -506,7 +508,8 @@ static gboolean
 gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
     GDBusMethodInvocation * invocation,
     const gchar * uid, const gchar * rid,
-    guint width, guint height, guint fps, guint latency, gpointer user_data)
+    guint width, guint height, guint fps, guint latency, guint flip,
+    guint orientation, gpointer user_data)
 {
   GaeulMjpegApplication *self = GAEUL_MJPEG_APPLICATION (user_data);
 
@@ -524,7 +527,9 @@ gaeul_mjpeg_application_handle_start (Gaeul2DBusMJPEGService * object,
    * pcr-interval is 3600 in 90kHz(=40ms), it should be 80-120 ms.
    * However, the exact result of how much latency varies is unsure.
    */
-  request = gaeul_mjpeg_request_new (uid, rid, latency, 65, width, height, fps);
+  request =
+      gaeul_mjpeg_request_new (uid, rid, latency, 65, width, height, fps, flip,
+      orientation);
 
   /* Every start request will have unique id. */
   request_id = g_uuid_string_random ();

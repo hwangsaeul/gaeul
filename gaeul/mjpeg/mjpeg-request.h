@@ -37,6 +37,9 @@ typedef struct _GaeulMjpegRequest
   gint height;
   gint fps;
 
+  guint flip;
+  guint orientation;
+
   /*< private >*/
   gint refcount;
 } GaeulMjpegRequest;
@@ -46,7 +49,8 @@ GType               gaeul_mjpeg_request_get_type (void);
 GaeulMjpegRequest  *gaeul_mjpeg_request_new    (const gchar *uid, const gchar *rid,
                                                 guint protocol_latency,
                                                 guint demux_latency,
-                                                gint width, gint height, gint fps);
+                                                gint width, gint height, gint fps,
+                                                guint flip, guint orientation);
 
 GaeulMjpegRequest  *gaeul_mjpeg_request_ref    (GaeulMjpegRequest *self);
 

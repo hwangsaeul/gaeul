@@ -7,7 +7,7 @@ G_DEFINE_BOXED_TYPE(GaeulMjpegRequest, gaeul_mjpeg_request, gaeul_mjpeg_request_
 GaeulMjpegRequest *
 gaeul_mjpeg_request_new (const gchar * uid, const gchar * rid,
     guint protocol_latency, guint demux_latency, gint width, gint height,
-    gint fps)
+    gint fps, guint flip, guint orientation)
 {
   GaeulMjpegRequest *r = g_new0 (GaeulMjpegRequest, 1);
 
@@ -22,6 +22,9 @@ gaeul_mjpeg_request_new (const gchar * uid, const gchar * rid,
   r->width = width;
   r->height = height;
   r->fps = fps;
+
+  r->flip = flip;
+  r->orientation = orientation;
 
   return r;
 }
@@ -55,9 +58,10 @@ gaeul_mjpeg_request_hash (GaeulMjpegRequest * self)
 
   str = g_strdup_printf ("%s%s"
       "%" G_GUINT32_FORMAT "%" G_GUINT32_FORMAT
-      "%" G_GINT32_FORMAT "%" G_GINT32_FORMAT "%" G_GINT32_FORMAT,
+      "%" G_GINT32_FORMAT "%" G_GINT32_FORMAT "%" G_GINT32_FORMAT
+      "%" G_GUINT32_FORMAT "%" G_GUINT32_FORMAT,
       self->uid, self->rid, self->protocol_latency, self->demux_latency,
-      self->width, self->height, self->fps);
+      self->width, self->height, self->fps, self->flip, self->orientation);
 
   return g_str_hash (str);
 }
@@ -72,7 +76,8 @@ gaeul_mjpeg_request_equal (GaeulMjpegRequest * r1, GaeulMjpegRequest * r2)
       (g_strcmp0 (r1->uid, r2->uid) == 0) && (g_strcmp0 (r1->rid, r2->rid) == 0)
       && (r1->protocol_latency == r2->protocol_latency)
       && (r1->demux_latency == r2->demux_latency) && (r1->height == r2->height)
-      && (r1->width == r2->width) && (r1->fps == r2->fps);
+      && (r1->width == r2->width) && (r1->fps == r2->fps)
+      && (r1->flip == r2->flip) && (r1->orientation == r2->orientation);
 }
 
 guint
@@ -80,7 +85,8 @@ gaeul_mjpeg_request_parameter_hash (GaeulMjpegRequest * self)
 {
   g_autofree gchar *str = NULL;
   str =
-      g_strdup_printf ("%u/%u/%d/%d/%d", self->protocol_latency,
-      self->demux_latency, self->width, self->height, self->fps);
+      g_strdup_printf ("%u/%u/%d/%d/%d/%u/%u", self->protocol_latency,
+      self->demux_latency, self->width, self->height, self->fps,
+      self->flip, self->orientation);
   return g_str_hash (str);
 }

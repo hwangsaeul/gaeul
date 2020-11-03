@@ -23,7 +23,7 @@ test_gaeul_mjpeg_request_create (void)
   g_autoptr (GaeulMjpegRequest) r = NULL;
   GaeulMjpegRequest *tmp = NULL;
 
-  r = gaeul_mjpeg_request_new ("uid", "rid", 100, 100, 1920, 1080, 30);
+  r = gaeul_mjpeg_request_new ("uid", "rid", 100, 100, 1920, 1080, 30, 0, 0);
 
   g_assert_nonnull (r);
 
@@ -41,9 +41,9 @@ test_gaeul_mjpeg_request_compare (void)
   g_autoptr (GaeulMjpegRequest) r2 = NULL;
   g_autoptr (GaeulMjpegRequest) r3 = NULL;
 
-  r1 = gaeul_mjpeg_request_new ("uid1", "rid1", 100, 100, 1920, 1080, 30);
-  r2 = gaeul_mjpeg_request_new ("uid", "rid", 100, 100, 1920, 1080, 30);
-  r3 = gaeul_mjpeg_request_new ("uid", "rid", 100, 100, 1920, 1080, 30);
+  r1 = gaeul_mjpeg_request_new ("uid1", "rid1", 100, 100, 1920, 1080, 30, 0, 0);
+  r2 = gaeul_mjpeg_request_new ("uid", "rid", 100, 100, 1920, 1080, 30, 0, 0);
+  r3 = gaeul_mjpeg_request_new ("uid", "rid", 100, 100, 1920, 1080, 30, 0, 0);
 
   g_assert_false (gaeul_mjpeg_request_equal (r1, r2));
   g_assert_true (gaeul_mjpeg_request_equal (r2, r3));

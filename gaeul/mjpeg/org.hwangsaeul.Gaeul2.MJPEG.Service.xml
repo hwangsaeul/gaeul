@@ -11,6 +11,8 @@
       @height: The height of output video stream
       @fps: The framerate of output video stream
       @latency: The desire latency in millisecond of SRT connection
+      @flip: The video flip direction(4: horizontal, 5: vertical)
+      @orientation: The pre-defined video rotation(1: 90r, 2: 180, 3: 90l)
       @uri: The uri to serve mjpeg stream
       @request_id: The random string to distinguish user request
    
@@ -23,6 +25,8 @@
       <arg name="height" type="u" direction="in"/>
       <arg name="fps" type="u" direction="in"/>
       <arg name="latency" type="u" direction="in"/>
+      <arg name="flip" type="u" direction="in"/>
+      <arg name="orientation" type="u" direction="in"/>
       <arg name="uri" type="s" direction="out"/>
       <arg name="request_id" type="s" direction="out"/>
     </method>
