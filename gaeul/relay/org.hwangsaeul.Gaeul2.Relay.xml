@@ -125,4 +125,7 @@
     <property name="SourceURI" type="s" access="read"/>
     <property name="SinkURI" type="s" access="read"/>
   </interface>
+
+  <interface name="org.hwangsaeul.Gaeul2.Relay.Connection">
+  </interface>
 </node>

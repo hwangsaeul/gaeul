@@ -51,11 +51,44 @@ struct _GaeulRelayApplication
 
   GSettings *settings;
   Gaeul2DBusRelay *dbus_service;
+  GHashTable *connection_dbus_services;
 };
 
 /* *INDENT-OFF* */
 G_DEFINE_TYPE (GaeulRelayApplication, gaeul_relay_application, GAEUL_TYPE_APPLICATION)
 /* *INDENT-ON* */
+
+static void
+gaeul_relay_application_on_caller_accepted (GaeulRelayApplication * self,
+    gint id, HwangsaeCallerDirection direction, GInetSocketAddress * addr,
+    const gchar * username, const gchar * resource, gpointer data)
+{
+  g_autoptr (Gaeul2DBusRelayConnection) connection = NULL;
+  g_autoptr (GError) error = NULL;
+  g_autofree gchar *dbus_obj_path = NULL;
+
+  connection = gaeul2_dbus_relay_connection_skeleton_new ();
+
+  dbus_obj_path = g_strdup_printf ("/org/hwangsaeul/Gaeul2/Relay/%s/%d",
+      direction == HWANGSAE_CALLER_DIRECTION_SINK ? "sinks" : "sources", id);
+
+  g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (connection),
+      g_dbus_interface_skeleton_get_connection
+      (G_DBUS_INTERFACE_SKELETON (self->dbus_service)), dbus_obj_path, &error);
+
+  if (error) {
+    g_debug ("Failed to expose caller %d on D-Bus: %s", id, error->message);
+  }
+
+  g_hash_table_insert (self->connection_dbus_services, GINT_TO_POINTER (id),
+      g_steal_pointer (&connection));
+}
+
+static void
+gaeul_relay_application_on_caller_closed (GaeulRelayApplication * self, gint id)
+{
+  g_hash_table_remove (self->connection_dbus_services, GINT_TO_POINTER (id));
+}
 
 static void
 gaeul_relay_application_on_io_error (GaeulRelayApplication * app,
@@ -102,6 +135,10 @@ gaeul_relay_application_activate (GApplication * app)
         "master-username", master_username, NULL);
   }
 
+  g_signal_connect_swapped (self->relay, "caller-accepted",
+      G_CALLBACK (gaeul_relay_application_on_caller_accepted), self);
+  g_signal_connect_swapped (self->relay, "caller-closed",
+      G_CALLBACK (gaeul_relay_application_on_caller_closed), self);
   g_signal_connect_swapped (self->relay, "io-error",
       G_CALLBACK (gaeul_relay_application_on_io_error), self);
 
@@ -143,6 +180,7 @@ gaeul_relay_application_dispose (GObject * object)
   g_clear_object (&self->settings);
   g_clear_object (&self->auth);
   g_clear_object (&self->relay);
+  g_clear_pointer (&self->connection_dbus_services, g_hash_table_unref);
 
   G_OBJECT_CLASS (gaeul_relay_application_parent_class)->dispose (object);
 }
@@ -442,4 +480,6 @@ gaeul_relay_application_class_init (GaeulRelayApplicationClass * klass)
 static void
 gaeul_relay_application_init (GaeulRelayApplication * self)
 {
+  self->connection_dbus_services =
+      g_hash_table_new_full (NULL, NULL, NULL, g_object_unref);
 }
