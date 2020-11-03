@@ -22,7 +22,7 @@
 #include <gio/gio.h>
 
 static void
-_set_flag (HwangsaeRelay * relay, HwangsaeCallerDirection direction,
+_set_flag (HwangsaeRelay * relay, gint id, HwangsaeCallerDirection direction,
     GInetSocketAddress * addr, const gchar * username, const gchar * resource,
     gpointer data)
 {
