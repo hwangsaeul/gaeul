@@ -4,6 +4,7 @@ Maintainer: Jeongseok Kim <jeongseok.kim@sk.com>
 Build-Depends:
  debhelper (>= 10~),
  libgaeguli-dev,
+ libgaeguli-test-common-dev,
  libglib2.0-dev,
  libgstreamer-plugins-bad1.0-dev,
  libgstreamer1.0-dev,
