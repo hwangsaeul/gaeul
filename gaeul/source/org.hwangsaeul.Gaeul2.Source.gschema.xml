@@ -87,6 +87,9 @@
     <key name="pbkeylen" enum="org.hwangsaeul.Gaeguli.SRTKeyLength">
       <default>"default"</default>
     </key>
+    <key name="prefer-hw-decoding" type="b">
+      <default>true</default>
+    </key>
   </schema>
 
 </schemalist>

@@ -400,6 +400,9 @@ gaeul_source_application_command_line (GApplication * app,
     passphrase = g_settings_get_string (ssettings, "passphrase");
     pbkeylen = g_settings_get_enum (ssettings, "pbkeylen");
 
+    g_object_set (pipeline, "prefer-hw-decoding",
+        g_settings_get_boolean (ssettings, "prefer-hw-decoding"), NULL);
+
     if (!gaeguli_nest_start (nest, stream_id, target_uri, video_codec, bitrate,
             passphrase, pbkeylen)) {
       goto error;
