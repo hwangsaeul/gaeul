@@ -51,7 +51,9 @@ static GParamSpec *properties[PROP_LAST] = { NULL };
     "srtsrc name=src uri=\"%s\" latency=%d ! queue ! tsdemux latency=%d ! h264parse ! decodebin ! " \
     "videoconvert ! videoscale ! videorate ! " \
     "video/x-raw, framerate=%d/1, width=%d, height=%d ! " \
-    "jpegenc ! videoflip name=flip video-direction=%u ! videoflip name=orientation video-direction=%u ! " \
+    "jpegenc ! videoconvert ! " \
+    "videoflip name=flip video-direction=%u ! " \
+    "videoflip name=orientation video-direction=%u ! " \
     "multipartmux boundary=endofsection ! multisocketsink name=msocksink sync=false"
 /* *INDENT-ON* */
 
