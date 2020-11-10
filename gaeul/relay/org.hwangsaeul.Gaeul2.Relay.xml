@@ -139,5 +139,17 @@
       <arg name="option" type="u" direction="in"/>
       <arg name="value" type="v" direction="out"/>
     </method>
+    <!--
+      SetSocketOption:
+      @option: an identifier of a SRT socket option. For values see SRT_SOCKOPT
+      enum in libsrt API.
+      @value: the new option value
+
+      Sets an option of the connection's SRT socket.
+    -->
+    <method name="SetSocketOption">
+      <arg name="option" type="u" direction="in"/>
+      <arg name="value" type="v" direction="in"/>
+    </method>
   </interface>
 </node>

@@ -80,6 +80,28 @@ gaeul_relay_application_handle_get_socket_option (GaeulRelayApplication * self,
   return TRUE;
 }
 
+static gboolean
+gaeul_relay_application_handle_set_socket_option (GaeulRelayApplication * self,
+    GDBusMethodInvocation * invocation, gint option, GVariant * value,
+    Gaeul2DBusRelayConnection * connection)
+{
+  g_autoptr (GVariant) v = g_variant_get_variant (value);
+  g_autoptr (GError) error = NULL;
+
+  hwangsae_relay_set_socket_option (self->relay,
+      GPOINTER_TO_INT (g_object_get_data (G_OBJECT (connection),
+              "gaeul-srt-socket")), option, v, &error);
+
+  if (error) {
+    g_dbus_method_invocation_return_gerror (invocation, error);
+  } else {
+    gaeul2_dbus_relay_connection_complete_set_socket_option (connection,
+        invocation);
+  }
+
+  return TRUE;
+}
+
 static void
 gaeul_relay_application_on_caller_accepted (GaeulRelayApplication * self,
     gint id, HwangsaeCallerDirection direction, GInetSocketAddress * addr,
@@ -95,6 +117,9 @@ gaeul_relay_application_on_caller_accepted (GaeulRelayApplication * self,
 
   g_signal_connect_swapped (connection, "handle-get-socket-option",
       (GCallback) gaeul_relay_application_handle_get_socket_option, self);
+
+  g_signal_connect_swapped (connection, "handle-set-socket-option",
+      (GCallback) gaeul_relay_application_handle_set_socket_option, self);
 
   dbus_obj_path = g_strdup_printf ("/org/hwangsaeul/Gaeul2/Relay/%s/%d",
       direction == HWANGSAE_CALLER_DIRECTION_SINK ? "sinks" : "sources", id);
