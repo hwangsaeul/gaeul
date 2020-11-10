@@ -127,5 +127,17 @@
   </interface>
 
   <interface name="org.hwangsaeul.Gaeul2.Relay.Connection">
+    <!--
+      GetSocketOption:
+      @option: an identifier of a SRT socket option. For values see SRT_SOCKOPT
+      enum in libsrt API.
+      @value: a returned option value
+
+      Reads an option of the connection's SRT socket.
+    -->
+    <method name="GetSocketOption">
+      <arg name="option" type="u" direction="in"/>
+      <arg name="value" type="v" direction="out"/>
+    </method>
   </interface>
 </node>
