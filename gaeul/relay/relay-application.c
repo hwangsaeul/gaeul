@@ -45,6 +45,7 @@ typedef struct
   GInetAddress *addr;
   gchar *username;
   gchar *resource;
+  HwangsaeRejectReason reason;
 } RejectLog;
 
 static void
@@ -164,7 +165,7 @@ gaeul_relay_application_on_caller_accepted (GaeulRelayApplication * self,
 static void
 gaeul_relay_application_on_caller_rejected (GaeulRelayApplication * self,
     gint id, HwangsaeCallerDirection direction, GInetSocketAddress * addr,
-    const gchar * username, const gchar * resource)
+    const gchar * username, const gchar * resource, HwangsaeRejectReason reason)
 {
   g_autoptr (GError) error = NULL;
   RejectLog *log = g_new0 (RejectLog, 1);
@@ -174,6 +175,7 @@ gaeul_relay_application_on_caller_rejected (GaeulRelayApplication * self,
   log->addr = g_object_ref (g_inet_socket_address_get_address (addr));
   log->username = g_strdup (username);
   log->resource = g_strdup (resource);
+  log->reason = reason;
 
   LOCK_APP;
 
@@ -488,14 +490,14 @@ gaeul_relay_application_handle_list_rejections (GaeulRelayApplication * self,
 {
   GVariantBuilder builder;
 
-  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(xnsss)"));
+  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(xnsssn)"));
 
   LOCK_APP;
 
   while (self->reject_log) {
     RejectLog *log = self->reject_log->data;
 
-    g_variant_builder_open (&builder, G_VARIANT_TYPE ("(xnsss)"));
+    g_variant_builder_open (&builder, G_VARIANT_TYPE ("(xnsssn)"));
     g_variant_builder_add (&builder, "x", log->timestamp);
     g_variant_builder_add (&builder, "n", log->direction);
     g_variant_builder_add (&builder, "s", g_inet_address_to_string (log->addr));
@@ -503,6 +505,7 @@ gaeul_relay_application_handle_list_rejections (GaeulRelayApplication * self,
         g_strdup (log->username ? log->username : ""));
     g_variant_builder_add (&builder, "s",
         g_strdup (log->resource ? log->resource : ""));
+    g_variant_builder_add (&builder, "n", log->reason);
     g_variant_builder_close (&builder);
 
     self->reject_log = g_slist_delete_link (self->reject_log, self->reject_log);

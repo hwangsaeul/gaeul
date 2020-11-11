@@ -124,17 +124,27 @@
 
     <!--
       ListRejections:
-      
+
       Lists authentication failures that have occurred since this method got
       last called. Returning the entries clears the internal log buffer.
       
       The fields of each item in the returned array have the following meaning:
       timestamp (μs since Epoch), caller direction (0 - sink, 1 - src),
       IP address of the remote host, caller's username, the requested resource
-      (in the case of sources; empty for sinks).
+      (in the case of sources; empty for sinks), reason for rejection.
+
+      The possiblerejection reasons are:
+       0 - HWANGSAE_REJECT_REASON_NO_USERNAME - username not specified
+       1 - HWANGSAE_REJECT_REASON_NO_RESOURCE - resource not specified
+       2 - HWANGSAE_REJECT_REASON_USERNAME_ALREADY_REGISTERED - sink with given username already exists
+       3 - HWANGSAE_REJECT_REASON_AUTHENTICATION - rejected by authentication callback 
+       4 - HWANGSAE_REJECT_REASON_TOO_MANY_SINKS - only one sink is allowed in unauthenticated mode
+       5 - HWANGSAE_REJECT_REASON_NO_SUCH_SINK - source requested a sink that doesn't exist
+       6 - HWANGSAE_REJECT_REASON_ENCRYPTION - unable to set encryption
+       7 - HWANGSAE_REJECT_REASON_CANT_CONNECT_MASTER - can't connect to master relay
     -->
     <method name="ListRejections">
-      <arg name="entries" type="a(xnsss)" direction="out"/>
+      <arg name="entries" type="a(xnsssn)" direction="out"/>
     </method>
 
     <property name="SourceURI" type="s" access="read"/>
