@@ -22,11 +22,9 @@
 #include <gio/gio.h>
 
 static void
-_set_flag (HwangsaeRelay * relay, gint id, HwangsaeCallerDirection direction,
-    GInetSocketAddress * addr, const gchar * username, const gchar * resource,
-    gpointer data)
+_set_flag (gboolean * flag)
 {
-  *(gboolean *) data = TRUE;
+  *flag = TRUE;
 }
 
 #define STREAMER_NAME_VALID "ValidStreamer"
@@ -49,8 +47,10 @@ test_gaeul_authenticator (void)
   g_object_set (stream, "username", STREAMER_NAME_INVALID, NULL);
   g_object_set (relay, "authentication", TRUE, NULL);
 
-  g_signal_connect (relay, "caller-accepted", (GCallback) _set_flag, &accepted);
-  g_signal_connect (relay, "caller-rejected", (GCallback) _set_flag, &rejected);
+  g_signal_connect_swapped (relay, "caller-accepted", (GCallback) _set_flag,
+      &accepted);
+  g_signal_connect_swapped (relay, "caller-rejected", (GCallback) _set_flag,
+      &rejected);
 
   hwangsae_test_streamer_set_uri (stream, hwangsae_relay_get_sink_uri (relay));
 
