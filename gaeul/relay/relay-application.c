@@ -60,6 +60,8 @@ struct _GaeulRelayApplication
 {
   GaeulApplication parent;
 
+  GMutex lock;
+
   HwangsaeRelay *relay;
   GaeulStreamAuthenticator *auth;
 
@@ -77,6 +79,9 @@ struct _GaeulRelayApplication
 /* *INDENT-OFF* */
 G_DEFINE_TYPE (GaeulRelayApplication, gaeul_relay_application, GAEUL_TYPE_APPLICATION)
 /* *INDENT-ON* */
+
+#define LOCK_APP \
+  g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&self->lock)
 
 static gboolean
 gaeul_relay_application_handle_get_socket_option (GaeulRelayApplication * self,
@@ -169,6 +174,8 @@ gaeul_relay_application_on_caller_rejected (GaeulRelayApplication * self,
   log->addr = g_object_ref (g_inet_socket_address_get_address (addr));
   log->username = g_strdup (username);
   log->resource = g_strdup (resource);
+
+  LOCK_APP;
 
   self->reject_log = g_slist_append (self->reject_log, log);
 }
@@ -273,6 +280,7 @@ gaeul_relay_application_dispose (GObject * object)
   g_clear_object (&self->relay);
   g_clear_pointer (&self->connection_dbus_services, g_hash_table_unref);
   g_clear_slist (&self->reject_log, (GDestroyNotify) reject_log_free);
+  g_mutex_clear (&self->lock);
 
   G_OBJECT_CLASS (gaeul_relay_application_parent_class)->dispose (object);
 }
@@ -482,6 +490,8 @@ gaeul_relay_application_handle_list_rejections (GaeulRelayApplication * self,
 
   g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(xnsss)"));
 
+  LOCK_APP;
+
   while (self->reject_log) {
     RejectLog *log = self->reject_log->data;
 
@@ -603,6 +613,8 @@ gaeul_relay_application_class_init (GaeulRelayApplicationClass * klass)
 static void
 gaeul_relay_application_init (GaeulRelayApplication * self)
 {
+  g_mutex_init (&self->lock);
+
   self->connection_dbus_services =
       g_hash_table_new_full (NULL, NULL, NULL, g_object_unref);
 }
