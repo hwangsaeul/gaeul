@@ -38,6 +38,24 @@ typedef enum
 
 static GParamSpec *properties[PROP_LAST] = { NULL };
 
+typedef struct
+{
+  gint64 timestamp;
+  HwangsaeCallerDirection direction;
+  GInetAddress *addr;
+  gchar *username;
+  gchar *resource;
+} RejectLog;
+
+static void
+reject_log_free (RejectLog * log)
+{
+  g_clear_object (&log->addr);
+  g_clear_pointer (&log->username, g_free);
+  g_clear_pointer (&log->resource, g_free);
+  g_clear_pointer (&log, g_free);
+}
+
 struct _GaeulRelayApplication
 {
   GaeulApplication parent;
@@ -48,6 +66,8 @@ struct _GaeulRelayApplication
   guint sink_port;
   guint source_port;
   gchar *external_ip;
+
+  GSList *reject_log;
 
   GSettings *settings;
   Gaeul2DBusRelay *dbus_service;
@@ -105,7 +125,7 @@ gaeul_relay_application_handle_set_socket_option (GaeulRelayApplication * self,
 static void
 gaeul_relay_application_on_caller_accepted (GaeulRelayApplication * self,
     gint id, HwangsaeCallerDirection direction, GInetSocketAddress * addr,
-    const gchar * username, const gchar * resource, gpointer data)
+    const gchar * username, const gchar * resource)
 {
   g_autoptr (Gaeul2DBusRelayConnection) connection = NULL;
   g_autoptr (GError) error = NULL;
@@ -134,6 +154,23 @@ gaeul_relay_application_on_caller_accepted (GaeulRelayApplication * self,
 
   g_hash_table_insert (self->connection_dbus_services, GINT_TO_POINTER (id),
       g_steal_pointer (&connection));
+}
+
+static void
+gaeul_relay_application_on_caller_rejected (GaeulRelayApplication * self,
+    gint id, HwangsaeCallerDirection direction, GInetSocketAddress * addr,
+    const gchar * username, const gchar * resource)
+{
+  g_autoptr (GError) error = NULL;
+  RejectLog *log = g_new0 (RejectLog, 1);
+
+  log->timestamp = g_get_real_time ();
+  log->direction = direction;
+  log->addr = g_object_ref (g_inet_socket_address_get_address (addr));
+  log->username = g_strdup (username);
+  log->resource = g_strdup (resource);
+
+  self->reject_log = g_slist_append (self->reject_log, log);
 }
 
 static void
@@ -189,6 +226,8 @@ gaeul_relay_application_activate (GApplication * app)
 
   g_signal_connect_swapped (self->relay, "caller-accepted",
       G_CALLBACK (gaeul_relay_application_on_caller_accepted), self);
+  g_signal_connect_swapped (self->relay, "caller-rejected",
+      G_CALLBACK (gaeul_relay_application_on_caller_rejected), self);
   g_signal_connect_swapped (self->relay, "caller-closed",
       G_CALLBACK (gaeul_relay_application_on_caller_closed), self);
   g_signal_connect_swapped (self->relay, "io-error",
@@ -233,6 +272,7 @@ gaeul_relay_application_dispose (GObject * object)
   g_clear_object (&self->auth);
   g_clear_object (&self->relay);
   g_clear_pointer (&self->connection_dbus_services, g_hash_table_unref);
+  g_clear_slist (&self->reject_log, (GDestroyNotify) reject_log_free);
 
   G_OBJECT_CLASS (gaeul_relay_application_parent_class)->dispose (object);
 }
