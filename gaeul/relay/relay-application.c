@@ -474,7 +474,36 @@ gaeul_relay_application_handle_list_source_tokens (GaeulRelayApplication *
   return TRUE;
 }
 
+static gboolean
+gaeul_relay_application_handle_list_rejections (GaeulRelayApplication * self,
+    GDBusMethodInvocation * invocation)
+{
+  GVariantBuilder builder;
 
+  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(xnsss)"));
+
+  while (self->reject_log) {
+    RejectLog *log = self->reject_log->data;
+
+    g_variant_builder_open (&builder, G_VARIANT_TYPE ("(xnsss)"));
+    g_variant_builder_add (&builder, "x", log->timestamp);
+    g_variant_builder_add (&builder, "n", log->direction);
+    g_variant_builder_add (&builder, "s", g_inet_address_to_string (log->addr));
+    g_variant_builder_add (&builder, "s",
+        g_strdup (log->username ? log->username : ""));
+    g_variant_builder_add (&builder, "s",
+        g_strdup (log->resource ? log->resource : ""));
+    g_variant_builder_close (&builder);
+
+    self->reject_log = g_slist_delete_link (self->reject_log, self->reject_log);
+    reject_log_free (log);
+  }
+
+  gaeul2_dbus_relay_complete_list_rejections (self->dbus_service,
+      invocation, g_variant_builder_end (&builder));
+
+  return TRUE;
+}
 
 static gboolean
 gaeul_relay_application_dbus_register (GApplication * app,
@@ -509,6 +538,8 @@ gaeul_relay_application_dbus_register (GApplication * app,
         (GCallback) gaeul_relay_application_handle_list_sink_tokens, self);
     g_signal_connect_swapped (self->dbus_service, "handle-list-source-tokens",
         (GCallback) gaeul_relay_application_handle_list_source_tokens, self);
+    g_signal_connect_swapped (self->dbus_service, "handle-list-rejections",
+        (GCallback) gaeul_relay_application_handle_list_rejections, self);
   }
 
   if (!G_APPLICATION_CLASS (gaeul_relay_application_parent_class)->dbus_register

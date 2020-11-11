@@ -122,6 +122,21 @@
       <arg name="tokens" type="a(ssi)" direction="out"/>
     </method>
 
+    <!--
+      ListRejections:
+      
+      Lists authentication failures that have occurred since this method got
+      last called. Returning the entries clears the internal log buffer.
+      
+      The fields of each item in the returned array have the following meaning:
+      timestamp (μs since Epoch), caller direction (0 - sink, 1 - src),
+      IP address of the remote host, caller's username, the requested resource
+      (in the case of sources; empty for sinks).
+    -->
+    <method name="ListRejections">
+      <arg name="entries" type="a(xnsss)" direction="out"/>
+    </method>
+
     <property name="SourceURI" type="s" access="read"/>
     <property name="SinkURI" type="s" access="read"/>
   </interface>
