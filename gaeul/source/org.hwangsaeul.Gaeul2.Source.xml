@@ -50,6 +50,21 @@
     </method>
 
     <!--
+      SaveSnapshot:
+      @filename_pattern: Full path to the file where to save the captured image.
+      An optional occurrence of '%ld' char sequence will be replaced by the
+      number of microseconds since January 1, 1970 UTC when the image was
+      created.
+      @filename: Full path to the created file.
+
+      Saves a single frame of the channel's video stream into a JPEG file.
+    -->
+    <method name="SaveSnapshot">
+      <arg name="filename_pattern" type="s" direction="in"/>
+      <arg name="filename" type="s" direction="out"/>
+    </method>
+
+    <!--
      BitrateControl:
      Requested type of bitrate control. Allowed values: "cbr", "vbr", "cqp".
     -->

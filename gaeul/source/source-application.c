@@ -144,6 +144,59 @@ out:
 }
 
 static void
+_channel_handle_save_snapshot_finish (GaeguliPipeline * pipeline,
+    GAsyncResult * result, GDBusMethodInvocation * invocation)
+{
+  g_autoptr (GError) error = NULL;
+  g_autoptr (GBytes) bytes = NULL;
+  g_autoptr (GVariant) filename_pattern = NULL;
+  g_autofree gchar *filename = NULL;
+  const gchar *jpg_data;
+  gsize jpg_size;
+
+  filename_pattern = g_variant_get_child_value
+      (g_dbus_method_invocation_get_parameters (invocation), 0);
+
+  filename = g_strdup_printf (g_variant_get_string (filename_pattern, NULL),
+      g_get_real_time ());
+
+  bytes = gaeguli_pipeline_create_snapshot_finish (pipeline, result, &error);
+  if (error) {
+    goto error;
+  }
+
+  jpg_data = g_bytes_get_data (bytes, &jpg_size);
+
+  g_file_set_contents (filename, jpg_data, jpg_size, &error);
+  if (error) {
+    goto error;
+  }
+
+  gaeul2_dbus_source_channel_complete_save_snapshot (NULL, invocation,
+      filename);
+  return;
+
+error:
+  g_dbus_method_invocation_return_gerror (invocation, error);
+}
+
+static gboolean
+_channel_handle_save_snapshot (GaeguliNest * nest,
+    GDBusMethodInvocation * invocation, const gchar * file_path)
+{
+  if (!file_path || strlen (file_path) == 0) {
+    g_dbus_method_invocation_return_error (invocation, G_IO_ERROR,
+        G_IO_ERROR_INVALID_ARGUMENT, "Empty file path is not allowed.");
+    return TRUE;
+  }
+
+  gaeguli_pipeline_create_snapshot_async (nest->pipeline, NULL,
+      (GAsyncReadyCallback) _channel_handle_save_snapshot_finish, invocation);
+
+  return TRUE;
+}
+
+static void
 gaeguli_nest_dbus_register (GaeguliNest * nest, GDBusConnection * connection)
 {
   g_autofree gchar *dbus_obj_path = NULL;
@@ -182,6 +235,8 @@ gaeguli_nest_dbus_register (GaeguliNest * nest, GDBusConnection * connection)
 
   g_signal_connect_swapped (nest->dbus, "handle-get-stats",
       (GCallback) _channel_handle_get_stats, nest);
+  g_signal_connect_swapped (nest->dbus, "handle-save-snapshot",
+      (GCallback) _channel_handle_save_snapshot, nest);
 
   dbus_obj_path = g_strdup_printf ("/org/hwangsaeul/Gaeul2/Source/channels/%s",
       nest->id);
