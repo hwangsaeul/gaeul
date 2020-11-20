@@ -182,7 +182,8 @@ error:
 
 static gboolean
 _channel_handle_save_snapshot (GaeguliNest * nest,
-    GDBusMethodInvocation * invocation, const gchar * file_path)
+    GDBusMethodInvocation * invocation, const gchar * file_path,
+    GVariant * tags)
 {
   if (!file_path || strlen (file_path) == 0) {
     g_dbus_method_invocation_return_error (invocation, G_IO_ERROR,
@@ -190,8 +191,9 @@ _channel_handle_save_snapshot (GaeguliNest * nest,
     return TRUE;
   }
 
-  gaeguli_pipeline_create_snapshot_async (nest->pipeline, NULL,
-      (GAsyncReadyCallback) _channel_handle_save_snapshot_finish, invocation);
+  gaeguli_pipeline_create_snapshot_async (nest->pipeline, g_variant_ref (tags),
+      NULL, (GAsyncReadyCallback) _channel_handle_save_snapshot_finish,
+      invocation);
 
   return TRUE;
 }

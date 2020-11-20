@@ -55,12 +55,27 @@
       An optional occurrence of '%ld' char sequence will be replaced by the
       number of microseconds since January 1, 1970 UTC when the image was
       created.
+      @tags: EXIF tags to insert into the snapshot expressed as an array of
+      name - value pairs. The parameter accepts any tag name registered with
+      GStreamer through gst_tag_register(). For the list of the most common
+      supported tags see gsttaglist.h. The variant passed as the value must
+      match the type with which the given tag was registered in GStreamer.
       @filename: Full path to the created file.
 
       Saves a single frame of the channel's video stream into a JPEG file.
+
+      An example of a snapshot request that inserts geolocation info into
+      the resulting image:
+
+      busctl call org.hwangsaeul.Gaeul2.Source
+          /org/hwangsaeul/Gaeul2/Source/channels/testinstance_ch0
+          org.hwangsaeul.Gaeul2.Source.Channel
+          SaveSnapshot "sa{sv}" "/tmp/test-%ld.jpg"
+          3 title s "Hwangsaeul-ro, Seongnam" geo-location-longitude d 127.115552 geo-location-latitude d 37.380730
     -->
     <method name="SaveSnapshot">
       <arg name="filename_pattern" type="s" direction="in"/>
+      <arg name="tags" type="a{sv}" direction="in"/>
       <arg name="filename" type="s" direction="out"/>
     </method>
 
