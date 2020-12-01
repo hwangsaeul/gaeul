@@ -145,6 +145,9 @@
         H.264, etc., to raw video. 
       </description>
     </key>
+    <key name="record-location" type="s">
+      <default>""</default>
+    </key>
   </schema>
 
 </schemalist>

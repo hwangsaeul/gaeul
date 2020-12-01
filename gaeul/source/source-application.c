@@ -23,6 +23,7 @@
 #include "source/source-generated.h"
 
 #include <gaeguli/gaeguli.h>
+#include <gaeguli/bandwidthadaptor.h>
 
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -41,8 +42,11 @@ typedef struct _GaeguliNest
   gint refcount;
 
   gchar *id;
+  gchar *record_location;
   GaeguliPipeline *pipeline;
   GaeguliTarget *target_stream;
+  GaeguliTarget *record_stream;
+  GaeguliStreamAdaptor *adaptor;
   Gaeul2DBusSourceChannel *dbus;
 } GaeguliNest;
 
@@ -250,6 +254,58 @@ gaeguli_nest_dbus_register (GaeguliNest * nest, GDBusConnection * connection)
   }
 }
 
+static void
+_stream_quality_dropped_cb (GaeguliNest * nest)
+{
+  g_autoptr (GError) error = NULL;
+
+  nest->record_stream =
+      gaeguli_pipeline_add_recording_target (nest->pipeline,
+      nest->record_location, &error);
+  if (error) {
+    g_debug ("Failed to add recording target (reason: %s)", error->message);
+    return;
+  }
+  gaeguli_target_start (nest->record_stream, &error);
+  if (error) {
+    g_debug ("Failed to start srt target (reason: %s)", error->message);
+  }
+}
+
+static void
+_stream_quality_regained_cb (GaeguliNest * nest)
+{
+  g_autoptr (GError) error = NULL;
+
+  gaeguli_pipeline_remove_target (nest->pipeline, nest->record_stream, &error);
+  nest->record_stream = NULL;
+
+  if (error) {
+    g_debug ("%s", error->message);
+  } else {
+    g_debug ("record target removed");
+  }
+}
+
+static void
+_stream_started_cb (GaeguliPipeline * pipeline, guint target_id,
+    gpointer user_data)
+{
+  GaeguliNest *nest = user_data;
+
+  if (nest->adaptor) {
+    return;
+  }
+
+  nest->adaptor = gaeguli_target_get_stream_adaptor (nest->target_stream);
+
+  g_signal_connect_swapped (nest->adaptor, "stream-quality-dropped",
+      G_CALLBACK (_stream_quality_dropped_cb), nest);
+
+  g_signal_connect_swapped (nest->adaptor, "stream-quality-regained",
+      G_CALLBACK (_stream_quality_regained_cb), nest);
+}
+
 static gboolean
 gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
     const gchar * uri, GaeguliVideoCodec codec, guint bitrate,
@@ -271,6 +327,9 @@ gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
 
   g_object_set (nest->target_stream, "passphrase", passphrase, "pbkeylen",
       pbkeylen, NULL);
+
+  g_signal_connect (nest->pipeline, "stream-started",
+      G_CALLBACK (_stream_started_cb), nest);
 
   gaeguli_target_start (nest->target_stream, &error);
   if (error) {
@@ -295,6 +354,13 @@ gaeguli_nest_stop (GaeguliNest * nest)
     }
   }
 
+  if (nest->record_stream) {
+    g_autoptr (GError) error = NULL;
+    gaeguli_pipeline_remove_target (nest->pipeline, nest->record_stream,
+        &error);
+    nest->record_stream = NULL;
+  }
+
   if (nest->dbus) {
     g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (nest->dbus));
     g_clear_object (&nest->dbus);
@@ -314,7 +380,9 @@ gaeguli_nest_unref (GaeguliNest * nest)
     gaeguli_nest_stop (nest);
 
     g_clear_object (&nest->pipeline);
+    g_clear_object (&nest->adaptor);
     g_clear_pointer (&nest->id, g_free);
+    g_clear_pointer (&nest->record_location, g_free);
     g_free (nest);
   }
 }
@@ -382,6 +450,7 @@ gaeul_source_application_command_line (GApplication * app,
     guint target_port = 0;
     g_autofree gchar *stream_id = NULL;
     g_autofree gchar *passphrase = NULL;
+    g_autofree gchar *record_location = NULL;
     GaeguliSRTKeyLength pbkeylen = GAEGULI_SRT_KEY_LENGTH_0;
 
     g_autoptr (GSettings) ssettings =
@@ -398,6 +467,7 @@ gaeul_source_application_command_line (GApplication * app,
     name = g_settings_get_string (ssettings, "name");
     device = g_settings_get_string (ssettings, "device");
     target_uri = g_settings_get_string (ssettings, "target-uri");
+    record_location = g_settings_get_string (ssettings, "record-location");
 
     if (!name) {
       g_info ("config file[%s] doesn't have valid name property", conf_file);
@@ -417,6 +487,7 @@ gaeul_source_application_command_line (GApplication * app,
 
     nest = gaeguli_nest_new (stream_id, pipeline);
 
+    nest->record_location = g_strdup (record_location);
     passphrase = g_settings_get_string (ssettings, "passphrase");
     pbkeylen = g_settings_get_enum (ssettings, "pbkeylen");
 
