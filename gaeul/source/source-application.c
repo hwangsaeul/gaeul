@@ -356,6 +356,9 @@ _delete_tmpdir (const gchar * tmpdir)
   g_autoptr (GDir) tmpd = NULL;
 
   tmpd = g_dir_open (tmpdir, 0, NULL);
+  if (!tmpd) {
+    return;
+  }
 
   g_debug ("delete tmpdir(%s)", tmpdir);
 
