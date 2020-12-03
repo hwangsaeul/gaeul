@@ -156,6 +156,19 @@ gaeul_application_set_property (GObject * object,
 }
 
 static void
+gaeul_application_constructed (GObject * object)
+{
+  GaeulApplication *self = GAEUL_APPLICATION (object);
+  GaeulApplicationPrivate *priv = gaeul_application_get_instance_private (self);
+
+  if (priv->dbus_type == GAEUL_APPLICATION_DBUS_TYPE_NONE) {
+    g_application_set_application_id (G_APPLICATION (self), NULL);
+  }
+
+  G_OBJECT_CLASS (gaeul_application_parent_class)->constructed (object);
+}
+
+static void
 gaeul_application_dispose (GObject * object)
 {
   GaeulApplication *self = GAEUL_APPLICATION (object);
@@ -173,7 +186,7 @@ gaeul_application_class_init (GaeulApplicationClass * klass)
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
   GApplicationClass *app_class = G_APPLICATION_CLASS (klass);
 
-
+  object_class->constructed = gaeul_application_constructed;
   object_class->get_property = gaeul_application_get_property;
   object_class->set_property = gaeul_application_set_property;
   object_class->dispose = gaeul_application_dispose;
