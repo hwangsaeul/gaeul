@@ -85,11 +85,9 @@ _dbus_name_lost (GDBusConnection * connection, const gchar * name,
   GaeulApplication *self = user_data;
   GaeulApplicationPrivate *priv = gaeul_application_get_instance_private (self);
 
-  if (connection) {
-    g_warning ("Couldn't acquire '%s' on D-Bus", name);
-  } else {
-    g_warning ("Couldn't connect to D-Bus");
-  }
+  g_printerr ("Couldn't acquire service name '%s' on system D-Bus.\n"
+      "Check that the user account '%s' has appropriate permissions.\n", name,
+      getlogin ());
 
   priv->exit_status = 1;
   g_application_quit (G_APPLICATION (self));
