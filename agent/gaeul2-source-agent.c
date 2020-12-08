@@ -52,11 +52,16 @@ main (int argc, char **argv)
 
   context = g_option_context_new (NULL);
 
-  g_option_context_set_help_enabled (context, FALSE);
+  g_option_context_set_help_enabled (context, TRUE);
   g_option_context_add_main_entries (context, entries, NULL);
 
   if (!g_option_context_parse (context, &argc, &argv, &error)) {
     g_printerr ("%s\n", error->message);
+    return -1;
+  }
+
+  if (!config) {
+    g_printerr ("Configuration file not specified\n");
     return -1;
   }
 
