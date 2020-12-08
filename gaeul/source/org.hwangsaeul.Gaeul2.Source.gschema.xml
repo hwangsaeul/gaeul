@@ -4,9 +4,18 @@
   <schema id="org.hwangsaeul.Gaeul2.Source" path="/org/hwangsaeul/Gaeul2/Source/">
     <key name="uid" type="s">
       <default>"randomized-string"</default>
+      <summary>Source instance identifier</summary>
+      <description>
+        Unique string identifying the source agent within H8L deployment.
+      </description>
     </key>
     <key name="channel-configs" type="as">
       <default>[""]</default>
+      <summary>Channel configuration files</summary>
+      <description>
+        Filesystem paths to configuration files where the parameters of source
+        agent's channels (video streams) are specified, one channel per file.
+      </description>
     </key>
   </schema>
 
@@ -48,41 +57,93 @@
   <schema id="org.hwangsaeul.Gaeul2.Source.Channel" path="/org/hwangsaeul/Gaeul2/Source/Channel/">
     <key name="name" type="s">
       <default>""</default>
+      <summary>Channel name</summary>
+      <description>
+        Unique string identifying the channel within the source agent.
+      </description>
     </key>
     <key name="source" enum="org.hwangsaeul.Gaeguli.VideoSource">
       <default>"v4l2src"</default>
+      <summary>Video source type</summary>
+      <description>
+        Possible values are "v4l2src", "avfvideosrc" (on macOS), "videotestsrc"
+        (SMPTE color bars, no camera required), "nvarguscamerasrc" (NVIDIA ARGUS
+        API).
+      </description>
     </key>
     <key name="device" type="s">
       <default>""</default>
+      <summary>Video device</summary>
+      <description>
+        Type-specific capture device identifier. For V4L2 this is the device
+        node, e.g. /dev/video0. 
+      </description>
     </key>
     <key name="bitrate" type="u">
       <range min="500000" max="40000000"/>
       <default>2000000</default>
+      <summary>Video encoding bitrate</summary>
     </key>
     <key name="fps" type="u">
       <range min="1" max="120"/>
       <default>15</default>
+      <summary>Video encoding frame rate</summary>
     </key>
     <key name="codec" enum="org.hwangsaeul.Gaeguli.VideoCodec">
       <default>"x264"</default>
+      <summary>Video codec</summary>
+      <description>
+        Possible values are: "x264" (H.264 sw encoding using libx264),
+        "vaapih264" (H.264 hw VA-API encoder), "omxh264" (H.264 hw OpenMAX
+        encoder), "x265" (H.265 sw encoding using libx265), "vaapih265" (H.265
+        hw VA-API encoder), "omxh265" (H.265 hw OpenMAX encoder).
+      </description>
     </key>
     <key name="bitrate-control" enum="org.hwangsaeul.Gaeguli.BitrateControl">
       <default>"CBR"</default>
+      <summary>Bitrate control</summary>
+      <description>
+        Possible values are "CBR" (constant bitrate), "VBR" (variable bitrate).
+      </description>
     </key>
     <key name="resolution" enum="org.hwangsaeul.Gaeguli.VideoResolution">
       <default>"640x480"</default>
+      <summary>Video resolution</summary>
+      <description>
+        Possible values are "640x480", "1280x720", "1920x1080", "3840x2160".
+      </description>
     </key>
     <key name="target-uri" type="s">
       <default>""</default>
+      <summary>SRT stream URI</summary>
+      <description>
+        For example srt://127.0.0.1:8888 (single receiver, SRT caller mode);
+        srt://:8888 (SRT listener on local port 8888).
+      </description>
     </key>
     <key name="passphrase" type="s">
       <default>""</default>
+      <summary>SRT encryption passphrase</summary>
+      <description>
+        For streaming without encryption pass "".
+      </description>
     </key>
     <key name="pbkeylen" enum="org.hwangsaeul.Gaeguli.SRTKeyLength">
       <default>"default"</default>
+      <summary>SRT encryption key length</summary>
+      <description>
+        Possible values are "default" (chosen by streaming library), "AES-128",
+        "AES-192", "AES-256".
+      </description>
     </key>
     <key name="prefer-hw-decoding" type="b">
       <default>true</default>
+      <summary>Prefer hardware decoding of camera stream</summary>
+      <description>
+        Whether to use hardware decoder (if available) for converting the
+        capture device stream from its native format, which might be MJPEG,
+        H.264, etc., to raw video. 
+      </description>
     </key>
   </schema>
 
