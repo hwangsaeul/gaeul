@@ -5,12 +5,6 @@
     <key name="uid" type="s">
       <default>"randomized-string"</default>
     </key>
-    <key name="tmpdir" type="s">
-      <default>"/tmp/gaeul2"</default>
-    </key>
-    <key name="autoclean" type="b">
-      <default>true</default>
-    </key>
     <key name="channel-configs" type="as">
       <default>[""]</default>
     </key>

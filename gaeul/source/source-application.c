@@ -323,23 +323,11 @@ gaeguli_nest_unref (GaeguliNest * nest)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (GaeguliNest, gaeguli_nest_unref)
 /* *INDENT-ON* */
 
-typedef enum
-{
-  PROP_TMPDIR = 1,
-
-  /*< private > */
-
-  PROP_LAST
-} _GaeulSourceApplicationProperty;
-
-static GParamSpec *properties[PROP_LAST] = { NULL };
-
 struct _GaeulSourceApplication
 {
   GaeulApplication parent;
 
   GSettings *settings;
-  gchar *tmpdir;
   Gaeul2DBusSource *dbus_service;
 
   GList *gaegulis;
@@ -348,27 +336,6 @@ struct _GaeulSourceApplication
 /* *INDENT-OFF* */
 G_DEFINE_TYPE (GaeulSourceApplication, gaeul_source_application, GAEUL_TYPE_APPLICATION)
 /* *INDENT-ON* */
-
-static void
-_delete_tmpdir (const gchar * tmpdir)
-{
-  const gchar *f = NULL;
-  g_autoptr (GDir) tmpd = NULL;
-
-  tmpd = g_dir_open (tmpdir, 0, NULL);
-  if (!tmpd) {
-    return;
-  }
-
-  g_debug ("delete tmpdir(%s)", tmpdir);
-
-  while ((f = g_dir_read_name (tmpd)) != NULL) {
-    g_autofree gchar *fname = g_build_filename (tmpdir, f, NULL);
-    if (g_remove (fname) != 0) {
-      g_error ("failed to remove %s", fname);
-    }
-  }
-}
 
 static int
 gaeul_source_application_command_line (GApplication * app,
@@ -390,13 +357,6 @@ gaeul_source_application_command_line (GApplication * app,
       );
 
   g_settings_bind (self->settings, "uid", self, "uid", G_SETTINGS_BIND_DEFAULT);
-  g_settings_bind (self->settings, "tmpdir", self, "tmpdir",
-      G_SETTINGS_BIND_DEFAULT);
-
-  if (g_settings_get_boolean (self->settings, "autoclean")) {
-    g_autofree gchar *tmpdir = g_settings_get_string (self->settings, "tmpdir");
-    _delete_tmpdir (tmpdir);
-  }
 
   g_object_get (GAEUL_APPLICATION (self), "uid", &uid, NULL);
 
@@ -508,42 +468,8 @@ gaeul_source_application_dispose (GObject * object)
   GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (object);
 
   g_clear_object (&self->settings);
-  g_clear_pointer (&self->tmpdir, g_free);
 
   G_OBJECT_CLASS (gaeul_source_application_parent_class)->dispose (object);
-}
-
-static void
-gaeul_source_application_get_property (GObject * object,
-    guint prop_id, GValue * value, GParamSpec * pspec)
-{
-  GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (object);
-
-  switch (prop_id) {
-    case PROP_TMPDIR:
-      g_value_set_string (value, self->tmpdir);
-      break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
-  }
-}
-
-static void
-gaeul_source_application_set_property (GObject * object,
-    guint prop_id, const GValue * value, GParamSpec * pspec)
-{
-  GaeulSourceApplication *self = GAEUL_SOURCE_APPLICATION (object);
-
-  switch (prop_id) {
-    case PROP_TMPDIR:
-      g_free (self->tmpdir);
-      self->tmpdir = g_value_dup_string (value);
-      break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
-  }
 }
 
 static gboolean
@@ -690,15 +616,6 @@ gaeul_source_application_class_init (GaeulSourceApplicationClass * klass)
   GApplicationClass *app_class = G_APPLICATION_CLASS (klass);
 
   object_class->dispose = gaeul_source_application_dispose;
-  object_class->set_property = gaeul_source_application_set_property;
-  object_class->get_property = gaeul_source_application_get_property;
-
-  properties[PROP_TMPDIR] =
-      g_param_spec_string ("tmpdir", "tmpdir", "tmpdir", NULL,
-      G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
-
-  g_object_class_install_properties (object_class, G_N_ELEMENTS (properties),
-      properties);
 
   app_class->command_line = gaeul_source_application_command_line;
   app_class->activate = gaeul_source_application_activate;
