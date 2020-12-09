@@ -16,6 +16,9 @@
  *
  */
 
+#define _GNU_SOURCE
+#include <stdio.h>
+
 #include "application.h"
 #include "enumtypes.h"
 
@@ -87,7 +90,7 @@ _dbus_name_lost (GDBusConnection * connection, const gchar * name,
 
   g_printerr ("Couldn't acquire service name '%s' on system D-Bus.\n"
       "Check that the user account '%s' has appropriate permissions.\n", name,
-      getlogin ());
+      cuserid (NULL));
 
   priv->exit_status = 1;
   g_application_quit (G_APPLICATION (self));
