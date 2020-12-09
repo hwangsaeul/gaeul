@@ -23,7 +23,6 @@
 #include "source/source-generated.h"
 
 #include <gaeguli/gaeguli.h>
-#include <gaeguli/bandwidthadaptor.h>
 
 #include <glib.h>
 #include <glib/gstdio.h>
