@@ -44,7 +44,8 @@
 
   <enum id="org.hwangsaeul.Gaeguli.BitrateControl">
     <value nick="CBR" value="1"/>
-    <value nick="VBR" value="2"/>
+    <value nick="CQP" value="2"/>
+    <value nick="VBR" value="3"/>
   </enum>
 
   <enum id="org.hwangsaeul.Gaeguli.SRTKeyLength">
