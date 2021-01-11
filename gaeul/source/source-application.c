@@ -308,6 +308,7 @@ _stream_started_cb (GaeguliPipeline * pipeline, guint target_id,
 static gboolean
 gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
     const gchar * uri, GaeguliVideoCodec codec, guint bitrate,
+    GaeguliVideoBitrateControl bitrate_control,
     const gchar * passphrase, GaeguliSRTKeyLength pbkeylen)
 {
   g_autoptr (GError) error = NULL;
@@ -325,7 +326,7 @@ gaeguli_nest_start (GaeguliNest * nest, const gchar * stream_id,
   }
 
   g_object_set (nest->target_stream, "passphrase", passphrase, "pbkeylen",
-      pbkeylen, NULL);
+      pbkeylen, "bitrate-control", bitrate_control, NULL);
 
   g_signal_connect (nest->pipeline, "stream-started",
       G_CALLBACK (_stream_started_cb), nest);
@@ -461,6 +462,8 @@ gaeul_source_application_command_line (GApplication * app,
     GaeguliVideoResolution video_resolution =
         g_settings_get_enum (ssettings, "resolution");
     guint bitrate = g_settings_get_uint (ssettings, "bitrate");
+    GaeguliVideoBitrateControl bitrate_control =
+        g_settings_get_enum (ssettings, "bitrate-control");
     guint fps = g_settings_get_uint (ssettings, "fps");
 
     name = g_settings_get_string (ssettings, "name");
@@ -494,7 +497,7 @@ gaeul_source_application_command_line (GApplication * app,
         g_settings_get_boolean (ssettings, "prefer-hw-decoding"), NULL);
 
     if (!gaeguli_nest_start (nest, stream_id, target_uri, video_codec, bitrate,
-            passphrase, pbkeylen)) {
+            bitrate_control, passphrase, pbkeylen)) {
       goto error;
     }
     if (dbus_connection) {
